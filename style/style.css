@@ -1,0 +1,18 @@
+body {
+	font-family: sans-serif;
+	padding: 2rem;
+	background: #111;
+	color: #eee;
+}
+
+input,
+button {
+	font-size: 1rem;
+	margin-top: 1rem;
+}
+
+pre {
+	background: #222;
+	padding: 1rem;
+	color: #0f0;
+}
