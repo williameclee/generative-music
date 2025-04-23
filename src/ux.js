@@ -4,11 +4,84 @@ const log = (...args) => document.getElementById("log").textContent += args.join
 // const lastInputWords = document.getElementById("textInput").value.trim()
 // 	.split(/[\s.,!?]+/).filter(word => word.length > 0);
 
-var iWord = 0;
+const bpmSlider = document.getElementById("bpmSlider");
+const bpmValue = document.getElementById("bpmValue");
 
-let iNote = 0;
+// Set initial BPM
+Tone.Transport.bpm.value = 72;
+
+bpmSlider.addEventListener("input", () => {
+	const bpm = parseInt(bpmSlider.value);
+	Tone.Transport.bpm.rampTo(bpm, 0.2); // Smooth transition
+	bpmValue.textContent = bpm;
+});
+
+// Set whether to use TTS
+const ttsToggle = document.getElementById("ttsToggle");
 
 let transportStarted = false; // whether the metronome is started
+
+
+const playToggle = document.getElementById("playToggle");
+let melodyIsPlaying = false;
+
+// Melody playback demo
+async function playMelody() {
+	Tone.Transport.stop();
+	if (melodyIsPlaying) {
+		melodyIsPlaying = false;
+		playToggle.textContent = "Play";
+		return;
+	}
+
+	melodyIsPlaying = true;
+	playToggle.textContent = "Stop";
+	document.getElementById("log").textContent = "";
+
+	if (audioCtx.state !== "running") {
+		audioCtx.resume();
+		Tone.start();
+		console.log("AudioContext resumed");
+	}
+
+	const melody = await loadMelody("assets/caledonia.json");
+	const accompaniment = await loadMIDI("assets/caledonia-accompaniment.mid");
+
+	if (!transportStarted) {
+		transportStarted = true;
+	}
+	startMetronomeDisplay();
+	await scheduleMelody(accompaniment, instrumentSelect.value);
+	console.log("Accompaniment scheduled", accompaniment);
+	await scheduleMelody(melody, "piano", ttsToggle.checked, null, true);
+	console.log("Melody scheduled");
+	Tone.start();
+	Tone.Transport.start();
+}
+
+const syllableRegex = /[^aeiouy]*[aeiouy]+(?:[^aeiouy]*$|[^aeiouy](?=[^aeiouy]))?/gi;
+
+function syllabify(words) {
+	return words.match(syllableRegex);
+}
+
+function startMetronomeDisplay() {
+	Tone.Transport.scheduleRepeat((time) => {
+		const pos = Tone.Transport.position.split('.')[0];  // just "1:2", ignore 3rd subdivision
+		document.getElementById('meter').textContent = `Metronome: ${pos}`;
+	}, "8n");  // update every eighth note
+}
+
+async function loadMelody(url) {
+	const res = await fetch(url);
+	if (!res.ok) throw new Error("Failed to load melody file");
+	const melody = await res.json();
+	return melody;
+}
+
+// Typing related stuff, disabled for now
+var iWord = 0;
+let iNote = 0;
 
 async function handleKey(event) {
 	if (!(event.key === " " || event.key === "Enter")) return;
@@ -37,7 +110,8 @@ async function handleKey(event) {
 				const accompaniment = await loadMIDI("assets/caledonia-accompaniment.mid");
 				await scheduleMelody(accompaniment);
 				console.log("Accompaniment scheduled", accompaniment);
-				await scheduleMelody(melody, false);
+				console.log("TTS: ", ttsToggle.checked);
+				await scheduleMelody(melody, ttsToggle.checked);
 				console.log("Melody scheduled");
 				Tone.start();
 				Tone.Transport.start();
@@ -64,46 +138,4 @@ async function handleKey(event) {
 		iWord++;
 	});
 
-}
-
-async function playMelody() {
-	if (audioCtx.state !== "running") {
-		audioCtx.resume();
-		Tone.start();
-		console.log("AudioContext resumed");
-	}
-
-	const melody = await loadMelody("assets/caledonia.json");
-	const accompaniment = await loadMIDI("assets/caledonia-accompaniment.mid");
-
-	if (!transportStarted) {
-		transportStarted = true;
-	}
-	startMetronomeDisplay();
-	await scheduleMelody(accompaniment);
-	console.log("Accompaniment scheduled", accompaniment);
-	await scheduleMelody(melody, true, null, null, true);
-	console.log("Melody scheduled");
-	Tone.start();
-	Tone.Transport.start();
-}
-
-const syllableRegex = /[^aeiouy]*[aeiouy]+(?:[^aeiouy]*$|[^aeiouy](?=[^aeiouy]))?/gi;
-
-function syllabify(words) {
-	return words.match(syllableRegex);
-}
-
-function startMetronomeDisplay() {
-	Tone.Transport.scheduleRepeat((time) => {
-		const pos = Tone.Transport.position.split('.')[0];  // just "1:2", ignore 3rd subdivision
-		document.getElementById('meter').textContent = `Now at: ${pos}`;
-	}, "8n");  // update every eighth note
-}
-
-async function loadMelody(url) {
-	const res = await fetch(url);
-	if (!res.ok) throw new Error("Failed to load melody file");
-	const melody = await res.json();
-	return melody;
 }

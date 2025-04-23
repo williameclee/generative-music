@@ -3,17 +3,35 @@ console.log("AudioContext initialized:", audioCtx);
 
 Tone.Transport.bpm.value = 72;     // BPM
 Tone.Transport.timeSignature = 3;  // beats per bar
-Tone.Transport.loop = false;
-Tone.Transport.loopEnd = "2m";     // Loop every 4 measures
+Tone.Transport.loop = true;
+Tone.Transport.loopEnd = "8m";     // Loop every 4 measures
+
+var instruments = SampleLibrary.load({
+	instruments: ['piano', 'bass-electric', 'bassoon', 'cello', 'clarinet', 'contrabass', 'flute', 'french-horn', 'guitar-acoustic', 'guitar-electric', 'guitar-nylon', 'harmonium', 'harp', 'organ', 'saxophone', 'trombone', 'trumpet', 'tuba', 'violin', 'xylophone'],
+	baseUrl: "src/tonejs-instruments/samples/",
+})
+
+Tone.loaded().then(() => {
+	const instrumentNames = Object.keys(instruments);
+	console.log("SampleLibrary loaded: ", instrumentNames);
+
+	const instrumentSelect = document.getElementById("instrumentSelect");
+	instrumentNames.forEach(name => {
+		const option = document.createElement("option");
+		option.value = name;
+		option.textContent = name.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+		instrumentSelect.appendChild(option);
+	});
+});
 
 
-async function scheduleMelody(melody, use_tts = true, offset = "0:0", synth = null, outputLog = false) {
-	synth ??= new Tone.PolySynth().toDestination();
+async function scheduleMelody(melody, instrument = "piano", use_tts = true, offset = "0:0", outputLog = false) {
+	instruments[instrument].toDestination();
 	for (const { note, time, duration, word } of melody) {
 		// Schedule synth note
 		const adjustedTime = Tone.Time(time) + Tone.Time(offset);
 		Tone.Transport.schedule((t) => {
-			synth.triggerAttackRelease(note, duration, t);
+			instruments[instrument].triggerAttackRelease(note, duration, t);
 		}, adjustedTime);
 
 		// If there's a word, schedule TTS
@@ -26,7 +44,7 @@ async function scheduleMelody(melody, use_tts = true, offset = "0:0", synth = nu
 
 		if (outputLog) {
 			if (outputLog) {
-				log(`eSpeakNG TTS: ${word.padEnd(10, ' ')} -> ${note} at ${time}`);
+				log(`eSpeakNG TTS: ${word.padEnd(10, ' ')} -> ${note.padEnd(3, ' ')} at ${time}`);
 			}
 		}
 	}

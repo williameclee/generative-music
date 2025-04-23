@@ -1,0 +1,3 @@
+[submodule "tonejs-instruments"]
+	path = src/tonejs-instruments
+	url = https://github.com/nbrosowsky/tonejs-instruments.git
