@@ -1,31 +1,10 @@
-let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-console.log("AudioContext initialized:", audioCtx);
-
 Tone.Transport.bpm.value = 72;     // BPM
 Tone.Transport.timeSignature = 3;  // beats per bar
-Tone.Transport.loop = true;
+Tone.Transport.loop = false;
 Tone.Transport.loopEnd = "8m";     // Loop every 4 measures
 
-var instruments = SampleLibrary.load({
-	instruments: ['piano', 'bass-electric', 'bassoon', 'cello', 'clarinet', 'contrabass', 'flute', 'french-horn', 'guitar-acoustic', 'guitar-electric', 'guitar-nylon', 'harmonium', 'harp', 'organ', 'saxophone', 'trombone', 'trumpet', 'tuba', 'violin', 'xylophone'],
-	baseUrl: "src/tonejs-instruments/samples/",
-})
 
-Tone.loaded().then(() => {
-	const instrumentNames = Object.keys(instruments);
-	console.log("SampleLibrary loaded: ", instrumentNames);
-
-	const instrumentSelect = document.getElementById("instrumentSelect");
-	instrumentNames.forEach(name => {
-		const option = document.createElement("option");
-		option.value = name;
-		option.textContent = name.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase());
-		instrumentSelect.appendChild(option);
-	});
-});
-
-
-async function scheduleMelody(melody, instrument = "piano", use_tts = true, offset = "0:0", outputLog = false) {
+async function scheduleMelody(melody, instrument = "piano", use_tts = true, offset = "0:0", outputLog = false, melody_tts_eligible = false) {
 	instruments[instrument].toDestination();
 	for (const { note, time, duration, word } of melody) {
 		// Schedule synth note
@@ -33,6 +12,15 @@ async function scheduleMelody(melody, instrument = "piano", use_tts = true, offs
 		Tone.Transport.schedule((t) => {
 			instruments[instrument].triggerAttackRelease(note, duration, t);
 		}, adjustedTime);
+
+		// Populate tts_eligible_notes
+		if (melody_tts_eligible && !word) {
+			ttsNoteQueue.push({
+				note: note,
+				time: time,
+				duration: duration,
+			});
+		}
 
 		// If there's a word, schedule TTS
 		if (!word || !use_tts) continue;
@@ -50,7 +38,7 @@ async function scheduleMelody(melody, instrument = "piano", use_tts = true, offs
 	}
 }
 
-async function loadMIDI(url) {
+async function loadMIDI(url, tts_eligible = false) {
 	const res = await fetch(url);
 	const arrayBuffer = await res.arrayBuffer();
 	const midi = new Midi(arrayBuffer);
@@ -61,6 +49,7 @@ async function loadMIDI(url) {
 	const melody = [];
 
 	midi.tracks.forEach(track => {
+		console.log("Track: ", track);
 		track.notes.forEach(note => {
 			const beatTime = note.ticks / ppq;
 			const beatDuration = note.durationTicks / ppq;
@@ -69,7 +58,8 @@ async function loadMIDI(url) {
 				note: note.name,
 				time: beatsToBarsBeatsSixteenths(beatTime, timeSignature),
 				duration: Tone.Time(`${beatDuration}i`).toNotation(),
-				word: ""
+				word: "",
+				tts_eligible: tts_eligible,
 			});
 		});
 	});

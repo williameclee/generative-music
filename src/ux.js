@@ -1,15 +1,10 @@
 // display the log on the page
 const log = (...args) => document.getElementById("log").textContent += args.join(" ") + "\n";
 
-// const lastInputWords = document.getElementById("textInput").value.trim()
-// 	.split(/[\s.,!?]+/).filter(word => word.length > 0);
-
 const bpmSlider = document.getElementById("bpmSlider");
 const bpmValue = document.getElementById("bpmValue");
 
 // Set initial BPM
-Tone.Transport.bpm.value = 72;
-
 bpmSlider.addEventListener("input", () => {
 	const bpm = parseInt(bpmSlider.value);
 	Tone.Transport.bpm.rampTo(bpm, 0.2); // Smooth transition
@@ -19,14 +14,18 @@ bpmSlider.addEventListener("input", () => {
 // Set whether to use TTS
 const ttsToggle = document.getElementById("ttsToggle");
 
-let transportStarted = false; // whether the metronome is started
-
-
 const playToggle = document.getElementById("playToggle");
 let melodyIsPlaying = false;
 
 // Melody playback demo
 async function playMelody() {
+	// Make sure initialisation is complete
+	if (!initialisationIsComplete) {
+		alert("Please wait for the initialisation to complete.");
+		return;
+	}
+
+	// If melody is already playing, stop it
 	Tone.Transport.stop();
 	if (melodyIsPlaying) {
 		melodyIsPlaying = false;
@@ -43,18 +42,16 @@ async function playMelody() {
 		Tone.start();
 		console.log("AudioContext resumed");
 	}
-
-	const melody = await loadMelody("assets/caledonia.json");
-	const accompaniment = await loadMIDI("assets/caledonia-accompaniment.mid");
-
-	if (!transportStarted) {
-		transportStarted = true;
-	}
+	console.log("Loading melody and accompaniment");
+	const melody = await loadMIDI("assets/daisy-bell-chorus-Voice.mid", true);
+	console.log("Melody loaded", melody);
+	const accompaniment = await loadMIDI("assets/daisy-bell-chorus-Piano.mid");
+	console.log("Accompaniment loaded", accompaniment);
 	startMetronomeDisplay();
 	await scheduleMelody(accompaniment, instrumentSelect.value);
 	console.log("Accompaniment scheduled", accompaniment);
-	await scheduleMelody(melody, "piano", ttsToggle.checked, null, true);
-	console.log("Melody scheduled");
+	await scheduleMelody(melody, "piano", false, null, true, true);
+	console.log("Melody scheduled", melody);
 	Tone.start();
 	Tone.Transport.start();
 }
@@ -80,62 +77,90 @@ async function loadMelody(url) {
 }
 
 // Typing related stuff, disabled for now
-var iWord = 0;
-let iNote = 0;
+var wordQueue = [];
+var previousInputLength = 0;
+var previousLastWord = "";
 
 async function handleKey(event) {
-	if (!(event.key === " " || event.key === "Enter")) return;
+	const allowedKeys = [" ", "Enter", "!", ",", "."];
+	if (!allowedKeys.includes(event.key)) return;
 
-	if (audioCtx.state !== "running") {
-		await audioCtx.resume();
-		Tone.start();
-		console.log("AudioContext resumed");
-	}
-
-	const melody = await loadMelody("assets/caledonia.json");
-
-	setTimeout(async () => {
-		const inputWords = document.getElementById("textInput").value.trim()
-			.split(/[\s.,!?]+/).filter(word => word.length > 0);
-		if (inputWords.length === lastInputWords.length) return;
-
-		const lastWord = inputWords[inputWords.length - 1];
-
-		lastInputWords.push(lastWord);
-
-		if (iWord == 0) {
-			if (!transportStarted) {
-				transportStarted = true;
-				startMetronomeDisplay();
-				const accompaniment = await loadMIDI("assets/caledonia-accompaniment.mid");
-				await scheduleMelody(accompaniment);
-				console.log("Accompaniment scheduled", accompaniment);
-				console.log("TTS: ", ttsToggle.checked);
-				await scheduleMelody(melody, ttsToggle.checked);
-				console.log("Melody scheduled");
-				Tone.start();
-				Tone.Transport.start();
-			}
+	if (!melodyIsPlaying) {
+		if (audioCtx.state !== "running") {
+			audioCtx.resume();
+			console.log("AudioContext resumed");
 		}
 
-		// var buffer = await espeakTTS2buffer(lastWord);
-		// var pitch = detectPitch(buffer, [40, 140]);
-		// if (pitch === null) {
-		// 	buffer = await espeakTTS2buffer(lastWord);
-		// 	pitch = detectPitch(buffer, [40, 140]);
+		const melody = await loadMIDI("assets/daisy-bell-chorus-Voice.mid");
+		const accompaniment = await loadMIDI("assets/daisy-bell-chorus-Piano.mid");
 
-		// 	if (pitch === null) {
-		// 		pitch = 72;
-		// 	}
-		// }
-		// const target_pitch = melody[iWord % melody.length].pitch - 18; // shift by 2 octaves
-		// // const semitoneShift = target_pitch - 12 * Math.log2(72 / 261.626);
-		// const semitoneShift = target_pitch - 12 * Math.log2(pitch / 261.626);
-		// // const delay = melody[iWord % melody.length].time - (audioCtx.currentTime - startTime);
-		// playAudio(buffer, { semitoneShift: semitoneShift });
-		// log(`Playing ${lastWord}, with pitch ${pitch.toFixed(2)} Hz -> ${semitoneShift} semitones shift`);
+		startMetronomeDisplay();
+		await scheduleMelody(accompaniment, instrumentSelect.value);
+		console.log("Accompaniment scheduled", accompaniment);
+		await scheduleMelody(melody, "piano", false, null, true, true);
+		console.log("Melody scheduled", melody);
+		Tone.start();
+		Tone.Transport.start();
 
-		iWord++;
+		melodyIsPlaying = true;
+		const loadingIndicator = document.getElementById("loadingIndicator");
+		loadingIndicator.textContent = "Melody playing";
+	}
+
+	const inputWords = document.getElementById("textInput").value.trim()
+		.split(/[\s.,!?]+/).filter(word => word.length > 0);
+	const inputLength = inputWords.length;
+	const lastWord = inputWords[inputLength - 1];
+	if (inputLength === previousInputLength && lastWord === previousLastWord) return;
+
+	previousInputLength = inputLength;
+	previousLastWord = lastWord;
+	wordQueue.push(lastWord);
+	// console.log("Words: ", wordQueue);
+	// console.log("Notes: ", ttsNoteQueue);
+
+	// Check both buffers are not empty
+	let nextWord, nextNote;
+	if (wordQueue.length == 0) {
+		console.log("No words available");
+		return;
+	} else {
+		nextWord = wordQueue[0];
+		wordQueue.shift();
+	}
+
+	pruneUsedNotes();
+	nextNote = ttsNoteQueue[0];
+	ttsNoteQueue.shift();
+
+	if (ttsNoteQueue.length == 0) {
+		console.log("No eligible notes available");
+		return;
+	}
+	console.log(nextWord, nextNote);
+	const wordBuffer = await
+		espeak2note(nextWord, Tone.Frequency(nextNote.note).toMidi(), nextNote.duration);
+
+	// Schedule it to play in sync
+	scheduleAudio(wordBuffer, nextNote.time);
+	log(`eSpeakNG TTS: ${nextWord.padEnd(10, ' ')} -> ${nextNote.note.padEnd(3, ' ')} at ${nextNote.time}`);
+}
+
+function pruneUsedNotes() {
+	const now = Tone.Transport.seconds;
+	ttsNoteQueue = ttsNoteQueue.filter(note => {
+		const noteTime = Tone.Time(note.time).toSeconds();
+		return !note.word && noteTime > now;
 	});
+}
 
+function pushWordToNextNote(word) {
+	pruneUsedNotes();
+	const next = ttsNoteQueue.shift();
+	if (next) {
+		next.word = word;
+		console.log(`Assigned "${word}" → ${next.note} @ ${next.time}`);
+	} else {
+		console.warn("No available notes for:", word);
+	}
 }

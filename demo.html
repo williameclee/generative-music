@@ -17,12 +17,15 @@
   </head>
   <body>
     <h1>ISTA301 Generative Music Demo</h1>
-    <!-- <input id="textInput" type="text" onkeydown="handleKey(event)"
-    placeholder="Type something..." style="width: 100%;">
-    <br> -->
+
+    <div id="loadingIndicator">Loading resources, please wait...</div>
+
+    <input id="textInput" type="text" onkeydown="handleKey(event)"
+      placeholder="Type the lyrics" style="width: 100%;">
+
     <div class="control-panel">
       <label for="bpmSlider">Tempo: <span id="bpmValue">100</span></label>
-      <input type="range" min="60" max="160" value="100" step="2" class="slider"
+      <input type="range" min="50" max="200" value="144" step="2" class="slider"
         id="bpmSlider">
       <label for="instrumentSelect">Accompaniment instrument: </label>
       <select id="instrumentSelect"></select>
@@ -31,12 +34,14 @@
         Play text-to-speech
       </label>
     </div>
-    <button onclick="playMelody()" id="playToggle">Play</button>
+
+    <!-- <button onclick="playMelody()" id="playToggle">Play</button> -->
     <div id="meter">Metronome: </div>
     <pre id="log"></pre>
 
     <script src="src/soundtouch.js"></script>
     <script src="src/espeakng.js"></script>
+    <script src="src/init.js"></script>
     <script src="src/tts.js"></script>
     <script src="src/ux.js"></script>
     <script src="src/audio.js"></script>

@@ -1,14 +1,3 @@
-// Initialises the eSpeakNG TTS engine by creating an instance of the eSpeakNG class
-async function initESpeakNG(workerPath = "src/espeakng.worker.js") {
-	return new Promise(resolve => {
-		window.espeak = new eSpeakNG(workerPath, resolve);
-	});
-}
-
-(async () => {
-	await initESpeakNG();
-})();
-
 // eSpeakNG TTS to AudioBuffer
 async function espeakTTS2buffer(text, {
 	pitch = 50,
