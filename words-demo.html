@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>Live Streaming Text with Outline Trace</title>
+		<style>
+    body { font-family: sans-serif; text-align: center; padding: 2em; background: #f0f0f0; }
+    canvas { border: 1px solid black; background: white; margin-top: 1em; }
+    /* input { font-size: 1.2em; margin-top: 1em; width: 80%; padding: 0.5em; } */
+  </style>
+	</head>
+
+		<!-- <h2>✍️ Streaming Text + Outline Trace</h2> -->
+		<input id="input" placeholder="Type...">
+		<div class="">
+			<input type="checkbox" name="toggleSound" id="toggleSound">
+			<label for="toggleSound">Play sound</label>
+			<input type="button" value="Stop" id="updateScene">
+		</div>
+		<div class="div" >
+			<canvas id="canvas" width="800" height="300"></canvas>
+		</div>
+		<script
+			src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.min.js"></script>
+		<script type="module" src="src/text-tracing.js"></script>
+
+	</body>
+</html>
