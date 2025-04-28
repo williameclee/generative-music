@@ -1,43 +1,49 @@
-import { Dot } from "./dot-physics.js"
 import { ScrollingScene } from "./scrolling-scene.js"
 
-const input = document.getElementById("input");
+const inputBox = document.getElementById("input");
+const updateButton = document.getElementById("updateScene");
+const updateFrameButton = document.getElementById("updateSceneFrame");
 const canvas = document.getElementById("canvas");
 
-let updateScene = true;
-
-const updateSceneButton = document.getElementById("updateScene");
-updateSceneButton.addEventListener("click", () => {
-	updateScene = !updateScene;
-});
-
-
-var scene = new ScrollingScene(canvas, 0.1, input);
-var dot = new Dot(100, scene.canvasCtx.canvas.height * 1 / 2, 5); // must come after canvasCtx to initialise dot
+var scene = new ScrollingScene(canvas, 0.1, inputBox, updateButton);
 
 
 var lastTimestamp = null;
 var deltaTime = null;
 
-function mainLoop(timestamp) {
-	if (!updateScene) {
-		requestAnimationFrame(mainLoop);
-		return;
-	}
-
+function update(timestamp) {
 	if (lastTimestamp == null) {
 		lastTimestamp = timestamp;
 	}
 
-	deltaTime = (timestamp - lastTimestamp); // seconds
+	deltaTime = Math.min(100, (timestamp - lastTimestamp)); // seconds
 	lastTimestamp = timestamp;
 
-	scene.update(deltaTime);
-	dot.update(deltaTime, scene.ghostCtx);
-	dot.draw(scene.canvasCtx);
+	scene.simulate(deltaTime);
+	scene.draw();
 
-	requestAnimationFrame(mainLoop);
+	if (!scene.updateScene) {
+		return;
+	}
+
+	requestAnimationFrame(update);
 }
 
 // Start
-requestAnimationFrame(mainLoop);
+requestAnimationFrame(update);
+
+updateButton.addEventListener("click", () => {
+	scene.updateScene = !scene.updateScene;
+	if (scene.updateScene) {
+		updateButton.innerText = "Pause";
+		requestAnimationFrame(update);
+	} else {
+		updateButton.innerText = "Resume";
+	}
+});
+
+updateFrameButton.addEventListener("click", () => {
+	scene.updateScene = false;
+	scene.simulate(1e3 / 20);
+	scene.draw();
+});

@@ -2,80 +2,95 @@ export class Dot {
 	constructor(x, y, radius) {
 		this.x = x;
 		this.y = y;
-		this.u = 0;
+		this.u = 0.2;
 		this.v = 0;
-		this.xPrev = x;
-		this.yPrev = y;
-		this.uPrev = 0;
-		this.vPrev = 0;
+		this.xPrev = this.x;
+		this.yPrev = this.y;
+		this.uPrev = this.u;
+		this.vPrev = this.v;
 		this.radius = radius;
 		this.colour = "blue";
 		this.gravity = 0.5 / 1e3;
-		this.maxSpeed = Math.sqrt(2 * Math.abs(this.gravity) * (canvas.height - this.y - this.radius));
+		this.maxSpeed =
+			Math.sqrt(2 * Math.abs(this.gravity) * (canvas.height - this.y - this.radius));
+		this.hasCollided = false;
+		this.inFloatingMode = false;
 	}
 
 	update(deltaTime, canvasCtx) {
-		var hasCollided = false;
-		this.colour = "blue";
+		// this.colour = "blue";
 
+		this.xPrev = this.x;
+		this.uPrev = this.u;
 		this.yPrev = this.y;
 		this.vPrev = this.v;
 
-		if (checkCollision(canvasCtx, this.x, this.y, this.radius)) {
-			// console.log("Between frames collision detected at:", this.x, this.y);
-			this.colour = "red";
-			let pushUp = true;
-			if (this.v > 0) {
-				pushUp = false;
-			}
-			const pos = pushOutOfCollision(canvasCtx, this.x, this.y, this.radius, pushUp);
-			this.x = pos.x;
-			this.y = pos.y;
-			if (pushUp) {
-				this.v = -Math.abs(this.vPrev);
-			} else {
-				this.v = Math.abs(this.v);
-			}
-			const playSound = document.getElementById("toggleSound").checked;
-			if (playSound) {
-				playBounceSound(this.y)
-			} else {
-				// console.log("Sound is off");
-			};
+		// x-motion
+		var xTarget = this.x + this.u * deltaTime;
+
+		// y-motion
+		if (this.inFloatingMode) {
+			this.v += (-0.5 * this.gravity) * deltaTime;
+		} else {
+			this.v += this.gravity * deltaTime;
+		}
+		var yTarget = this.y + this.v * deltaTime;
+
+		// Clamp position to canvas
+		const clampedPos = clampPos2canvas(canvas, xTarget, yTarget, this);
+		xTarget = clampedPos.x;
+		yTarget = clampedPos.y;
+		this.x = xTarget;
+		this.y = yTarget;
+		this.u = clampedPos.u;
+		this.v = clampedPos.v;
+
+		// Check for collision
+		const collisionResult =
+			checkPathCollision(canvasCtx, this.xPrev, this.yPrev, xTarget, yTarget, this.radius);
+		this.hasCollided = collisionResult.hasCollided;
+		const yCollision = collisionResult.y;
+
+		// No collision
+		if (!this.hasCollided) {
+			this.x = xTarget;
+			this.y = yTarget;
+			this.inFloatingMode = false;
 			return;
 		}
 
-		// Gravity pulls it down
-		this.v += this.gravity * deltaTime;
-		var yTarget = this.y + this.v * deltaTime;
-
-		// Floor clamp
-		if (yTarget > canvas.height - this.radius) {
-			yTarget = canvas.height - this.radius;
+		// Collision detected, but in floating mode, so no need to push out
+		if (this.inFloatingMode) {
+			this.x = xTarget;
 			this.y = yTarget;
-			this.v = -this.maxSpeed;
-		} else if (yTarget < this.radius) {
-			yTarget = this.radius;
-			this.y = yTarget;
-			this.v = -this.vPrev; // From energy conservation
+			return;
 		}
 
-		const collisionResult =
-			checkPathCollision(canvasCtx, this.xPrev, this.yPrev, this.x, yTarget, this.radius);
-		hasCollided = collisionResult.hasCollided;
-		this.x = collisionResult.x;
-		this.y = collisionResult.y;
+		// Collision detected, but not in floating mode: try to push out
+		const xTargetCollision = xTarget;
+		const yTargetCollision = yCollision - (yTarget - yCollision);
 
-		if (hasCollided) {
-			this.v = -this.vPrev;
-			// console.log("Collision detected at:", this.x, this.y, "speed: ", this.v);
-			const playSound = document.getElementById("toggleSound").checked;
-			if (playSound) {
-				playBounceSound(this.y)
-			} else {
-				// console.log("Sound is off");
-			};
+		if (checkCollision(canvasCtx, xTargetCollision, yTargetCollision, this.radius)) {
+			// Cannot push out of collision: enter floating mode
+			this.x = xTarget;
+			this.y = yTarget;
+			this.inFloatingMode = true;
+			return;
 		}
+
+		if (yTarget < this.yPrev) {
+			// Collision from below, enter floating mode
+			this.x = xTarget;
+			this.y = yTarget;
+			this.inFloatingMode = true;
+			return;
+		}
+
+		// Collision from above
+		this.x = xTargetCollision;
+		this.y = yTargetCollision;
+		this.v = -this.vPrev;
+		console.log("Collision detected at:", this.x, this.y, "speed: ", this.u, this.v);
 	}
 
 	draw(ctx) {
@@ -84,10 +99,25 @@ export class Dot {
 		ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
 		ctx.fill();
 	}
+
+	playSound(y, snap = true) {
+		Tone.start();
+		// Map dotZ (0 = top, canvas.height = bottom) to a musical pitch range
+		const minPitch = 200; // lowest frequency (Hz)
+		const maxPitch = 800; // highest frequency (Hz)
+
+		const normFactor = 1 - (y / canvas.height); // 1 at top, 0 at bottom
+		var frequency = minPitch + normFactor * (maxPitch - minPitch);
+		if (snap) {
+			frequency = noteId2frequency(frequency2noteId(frequency, true));
+		}
+
+		synth.triggerAttackRelease(frequency, "8n");
+	}
 }
 
 function checkCollision(ctx, dotX, dotY, radius) {
-	const steps = 8; // how many points around the circle to sample
+	const steps = 16; // how many points around the circle to sample
 	for (let i = 0; i < steps; i++) {
 		const angle = (i / steps) * 2 * Math.PI;
 		const sampleX = Math.round(dotX + radius * Math.cos(angle));
@@ -100,11 +130,12 @@ function checkCollision(ctx, dotX, dotY, radius) {
 			pixel = ctx.getImageData(sampleX, sampleY, 1, 1).data;
 		} catch (e) {
 			// console.log("Sampled pixel at:", sampleX, sampleY);
-			console.error("Error getting pixel data:", e);
+			console.error("Error getting pixel data at ", sampleX, sampleY, ": ", e);
 		}
 		const brightness = (pixel[0] + pixel[1] + pixel[2]) / 3;
 
-		if (brightness < 10) {
+		if (brightness < 10 && pixel[3] > 0) {
+			// console.log("Collision detected at:", sampleX, sampleY, "brightness:", brightness);
 			return true; // collision detected
 		}
 	}
@@ -132,6 +163,29 @@ function checkPathCollision(ctx, startX, startY, endX, endY, radius, steps = 10)
 	return { hasCollided: false, x: endX, y: endY }
 }
 
+function clampPos2canvas(canvas, x, y, dot) {
+	if (y > canvas.height - dot.radius) {
+		y = canvas.height - dot.radius;
+		dot.y = y;
+		dot.v = -dot.maxSpeed;
+	} else if (y < dot.radius) {
+		y = dot.radius;
+		dot.y = y;
+		dot.v = -dot.vPrev;
+	}
+	if (x < dot.radius) {
+		x = dot.radius - (x - dot.radius);
+		dot.x = x;
+		dot.u = -dot.uPrev;
+		// console.log("Collision with left wall:", this.x, this.y, "speed: ", this.u);
+	} else if (x > canvas.width - dot.radius) {
+		x = (canvas.width - dot.radius) - (x - (canvas.width - dot.radius));
+		dot.x = x;
+		dot.u = -this.uPrev;
+		// console.log("Collision with right wall:", this.x, this.y, "speed: ", this.u);
+	}
+	return { x: x, y: y, u: dot.u, v: dot.v };
+}
 
 function pushOutOfCollision(ctx, x, y, radius, pushUp = true) {
 	var pushCount = 0;
@@ -152,15 +206,17 @@ function pushOutOfCollision(ctx, x, y, radius, pushUp = true) {
 	return { x: x, y: y };
 }
 
-function playBounceSound(dotZ) {
+function playBounceSound(y, snap = true) {
 	Tone.start();
 	// Map dotZ (0 = top, canvas.height = bottom) to a musical pitch range
 	const minPitch = 200; // lowest frequency (Hz)
 	const maxPitch = 800; // highest frequency (Hz)
 
-	const normalized = 1 - (dotZ / canvas.height); // 1 at top, 0 at bottom
+	const normalized = 1 - (y / canvas.height); // 1 at top, 0 at bottom
 	var frequency = minPitch + normalized * (maxPitch - minPitch);
-	frequency = noteId2frequency(frequency2noteId(frequency, true));
+	if (snap) {
+		frequency = noteId2frequency(frequency2noteId(frequency, true));
+	}
 
 	synth.triggerAttackRelease(frequency, "8n");
 }
