@@ -13,17 +13,33 @@
 		<!-- <h2>✍️ Streaming Text + Outline Trace</h2> -->
 		<input id="input" placeholder="Type...">
 		<div class="">
-			<input type="checkbox" name="toggleSound" id="toggleSound" checked>
-			<label for="toggleSound">Play sound</label>
-			<input type="button" value="Pause" id="updateScene">
-			<input type="button" value="Proceed 1 frame" id="updateSceneFrame">
+			<!-- <input type="checkbox" name="toggleSound" id="toggleSound">
+			<label for="toggleSound">Play sound</label> -->
+			<input type="button" value="Play" id="updateScene">
+			<!-- <input type="button" value="Proceed 1 frame" id="updateSceneFrame"> -->
+			<span id="metronome-container"></span>
+			<span id="scale-container"></span>
 		</div>
 		<div class="div" >
-			<canvas id="canvas" width="800" height="300"></canvas>
+			<canvas id="canvas" width="800" height="600"></canvas>
+		</div>
+		<div>
+			<span id="sentence-buffer-container">
+				Sentence: 
+			</span><br/>
+			<span id="word-buffer-container">
+				Word:
+			</span>
+			<span id="word-type-container">
+				Type:
+			</span>
 		</div>
 		<script
 			src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.min.js"></script>
+		<script
+			src="src/tonejs-instruments/Tonejs-Instruments.js"></script>
 		<script type="module" src="src/text-tracing.js"></script>
+		<script type="module" src="src/word-processing.js"></script>
 
 	</body>
 </html>

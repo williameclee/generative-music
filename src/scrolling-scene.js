@@ -1,63 +1,90 @@
 import { Dot } from "./dot-physics.js"
+import { getWordType, addWordToCanvas } from "./word-processing.js"
+import { playDotSound, playBaseSound } from "./scene-audio.js";
+import { loadIntsruments, instruments } from "./scene-audio.js";
 
+let fontStyles = {};
+let scales = {};  // where all scales will be stored
+let currentScale = [];  // active scale during playback
 export class ScrollingScene {
-	constructor(canvas, scrollSpeed, inputElement, updateElement) {
+	constructor(canvas, inputElement) {
 		this.mainCtx = canvas.getContext("2d");
 		this.width = canvas.width;
 		this.height = canvas.height;
-		this.mainCtx.textBaseline = "base";
-		this.scrollSpeed = scrollSpeed;
-		this.bgCanvas = document.createElement('canvas');
+		this.simHeight = 2;
+		this.simWidth = 5;
+		this.bgCanvas = document.createElement("canvas");
 		this.bgCanvas.width = this.width;
 		this.bgCanvas.height = this.height;
-		this.bgCtx = this.bgCanvas.getContext('2d');
+		this.bgCtx = this.bgCanvas.getContext("2d", { willReadFrequently: true });
 		this.bgCtx.fillStyle = "pink";
 		this.bgCtx.fillRect(0, 0, this.width, this.height);
-		this.wordsCanvas = document.createElement('canvas');
-		this.wordsCanvas.width = this.width;
+		this.wordsCanvas = document.createElement("canvas");
+		this.wordsCanvas.width = this.width * 5;
 		this.wordsCanvas.height = this.height;
-		this.wordsCtx = this.wordsCanvas.getContext('2d', { willReadFrequently: true });
-		this.wordsCtx.font = "128px sans-serif";
-		this.wordsCtx.fillStyle = "black";
+		this.wordsCtx = this.wordsCanvas.getContext("2d", { willReadFrequently: true });
 		// document.body.appendChild(this.wordsCanvas);
 		this.inputElement = inputElement;
-		this.wordNeedsUpdate = false;
-		this.wordBuffer = "";
-		this.cursorX = 0;
-		this.cursorY = canvas.height;
-		this.dot = new Dot(100, this.height * 1 / 2, 5);
+		this.dot = new Dot(1, 5);
 		this.dotXTarget = this.dot.x;
-		this.lastTimestamp = null;
-		this.deltaTime = null;
 
+		this.clearSentenceBuffer = false;
 		this.inputElement.addEventListener("input", e => {
 			const value = e.target.value;
 			const lastChar = value[value.length - 1];
 
-			if ((lastChar === " " || lastChar === "\n") && this.wordNeedsUpdate === false) {
+			if (this.clearSentenceBuffer) {
+				this.sentenceBuffer = "";
+				this.clearSentenceBuffer = false;
+			}
+
+			if ((lastChar === " " || lastChar === "\n")) {
 				this.wordNeedsUpdate = true;
+				this.sentenceBuffer = this.sentenceBuffer + " " + value;
 				input.value = "";
+				const punctuationRegex = /[.,!?;:]/;
+				if (punctuationRegex.test(this.wordBuffer)) {
+					this.clearSentenceBuffer = true;
+				}
 			} else {
 				this.wordBuffer = value;
 			}
+
+			const wordBufferContainer = document.getElementById("word-buffer-container");
+			wordBufferContainer.innerText = `Word: ${this.wordBuffer}`;
+			const sentenceBufferContainer = document.getElementById("sentence-buffer-container");
+			sentenceBufferContainer.innerText = `Sentence: ${this.sentenceBuffer}`;
 		});
 
-		this.updateScene = true;
+		this.updateScene = false;
 	}
 
 	simulate(deltaTime) {
 		if (this.wordNeedsUpdate) {
-			addWordToCanvas(this.wordsCtx, this.wordBuffer, this.cursorX, this.cursorY);
+			const wordType = getWordType(this.wordBuffer, this.sentenceBuffer);
+			this.fontStyle = fontStyles[wordType] || fontStyles["default"];
+			if (this.fontStyle[4] === "uppercase") {
+				this.wordBuffer = this.wordBuffer.toUpperCase();
+			} else if (this.fontStyle[4] === "lowercase") {
+				this.wordBuffer = this.wordBuffer.toLowerCase();
+			}
+
+			addWordToCanvas(this.wordsCtx, this.wordBuffer, this, this.fontStyle);
+			const wordTypeContainer = document.getElementById("word-type-container");
+			wordTypeContainer.innerText = wordType;
 			this.wordBuffer = "";
 			this.wordNeedsUpdate = false;
 		}
 
-		this.dot.update(deltaTime, this.wordsCtx);
+		const wordsImgBuffer = this.wordsCtx.getImageData(0, 0, this.width, this.height);
+		this.dot.update(deltaTime, wordsImgBuffer);
 
-		const scrollLength = Math.round(this.dot.x - this.dotXTarget);
-		scrollCanvas(this.wordsCtx, scrollLength);
-		this.dot.x -= scrollLength;
-		this.dot.xPrev -= scrollLength;
+		const scrollL = (this.dot.x - this.dotXTarget);
+		const scrollLi = Math.round(scrollL * this.dot.xScale);
+		scrollCanvas(this.wordsCtx, scrollLi, this);
+		this.dot.x -= scrollL;
+		this.dot.xPrev -= scrollL;
+		this.cursorX = Math.max(this.cursorX, this.dot.x * this.dot.xScale);
 	}
 
 	draw() {
@@ -65,28 +92,47 @@ export class ScrollingScene {
 		this.mainCtx.putImageData(this.bgCtx.getImageData(0, 0, this.width, this.height), 0, 0);
 		this.mainCtx.drawImage(this.wordsCanvas, 0, 0);
 
-		// Handle dot effects
-		const soundOn = document.getElementById("toggleSound").checked;
-		if (soundOn) {
-			if (this.dot.inFloatingMode) {
-				// Floating mode
-				this.dot.colour = "green";
-				this.dot.playSound(this.dot.y, true);
-			} else if (this.dot.hasCollided) {
-				// Collision
-				this.dot.colour = "red";
-				this.dot.playSound(this.dot.y, false);
-			} else {
-				// Normal mode
-				this.dot.colour = "blue";
-			}
+		if (this.dot.hasCollidedWithGround && !this.metronomeStarted) {
+			Tone.start();
+			Tone.Transport.start();
+			this.metronomeStarted = true;
 		}
+		// Handle dot effects
+		// const soundOn = document.getElementById("toggleSound").checked;
+		// if (soundOn) {
+		if (this.dot.hasCollidedWithGround) {
+			try {
+				// playBaseSound(this.dot);
+				playDotSound(this.dot, "piano", 0, currentScale, "4n");
+			} catch (e) {
+				console.warning("Error playing sound:", e);
+			}
+		} else if (this.dot.inFloatingMode) {
+			// Floating mode
+			this.dot.colour = "green";
+			playDotSound(this.dot, "guitar-nylon", -20, currentScale, "16n");
+		} else if (this.dot.hasCollided) {
+			// Collision
+			this.dot.colour = "red";
+			playDotSound(this.dot, "piano", 0, currentScale, "8n");
+		} else {
+			// Normal mode
+			this.dot.colour = "blue";
+		}
+		// }
 		this.dot.draw(this.mainCtx);
-
+		this.mainCtx.fillStyle = "black";
+		// drawCursor(this.mainCtx, this.cursorX, this.cursorY);
 	}
 }
 
-function scrollCanvas(ctx, scrollLength) {
+function drawCursor(ctx, cursorX, cursorY) {
+	ctx.beginPath();
+	ctx.arc(cursorX, cursorY, 10, 0, Math.PI * 2);
+	ctx.stroke();
+}
+
+function scrollCanvas(ctx, scrollLength, scene, periodic = false) {
 	if (Math.abs(scrollLength) < 1) {
 		return;
 	}
@@ -97,59 +143,34 @@ function scrollCanvas(ctx, scrollLength) {
 		// Save the current canvas
 		const imgRemaining = ctx.getImageData(
 			scrollLength, 0,
-			ctx.canvas.width - scrollLength, ctx.canvas.height);
-		const imgOob = ctx.getImageData(
-			0, 0,
-			scrollLength, canvas.height);
+			ctx.canvas.width - scrollLength + 1, ctx.canvas.height);
+		if (periodic) {
+			const imgOob = ctx.getImageData(
+				0, 0,
+				scrollLength, canvas.height);
+			ctx.putImageData(imgOob, ctx.canvas.width - scrollLength, 0);
+		}
 
 		ctx.putImageData(imgRemaining, 0, 0);
-		ctx.putImageData(imgOob, ctx.canvas.width - scrollLength, 0);
 
-		// // Move cursorX backwards too, so new words stay in sync
-		// this.cursorX -= scrollLength;
+		// Move cursorX backwards too, so new words stay in sync
+		scene.cursorX -= scrollLength;
 
-		// // If cursor moves too far left, reset it
-		// if (this.cursorX < 10) {
-		// 	this.cursorX = 10;
-		// }
 	} else {
 		// Scroll right
 		const imgRemaining = ctx.getImageData(
 			0, 0,
 			ctx.canvas.width - Math.abs(scrollLength), ctx.canvas.height);
-		const imgOob = ctx.getImageData(
-			ctx.canvas.width - Math.abs(scrollLength), 0,
-			Math.abs(scrollLength), ctx.canvas.height);
+		if (periodic) {
+			const imgOob = ctx.getImageData(
+				ctx.canvas.width - Math.abs(scrollLength), 0,
+				Math.abs(scrollLength), ctx.canvas.height);
+			ctx.putImageData(imgOob, 0, 0);
+		}
 
-		ctx.putImageData(imgOob, 0, 0);
 		ctx.putImageData(imgRemaining, Math.abs(scrollLength), 0);
-		// this.cursorX -= scrollLength;
-		// if (this.cursorX > this.width - 10) {
-		// 	this.cursorX = this.width - 10;
-		// }
+		this.cursorX -= scrollLength;
 	}
-}
-
-function addWordToCanvas(ctx, word, cursorX = 0, cursorY = ctx.canvas.height) {
-	if (word.trim() === "") return;
-
-	// Choose a font dynamically — here's a simple alternating scheme
-	// const isEvenWord = wordCounter % 2 === 0;
-	// canvasCtx.font = isEvenWord ? "64px serif" : "64px monospace";
-
-	const wordWidth = ctx.measureText(word).width;
-	const lineHeight = parseInt(ctx.font, 10) * 1.2; // Adjust line height based on font size
-
-	const maxWidth = ctx.canvas.width - 10;
-	if (cursorX + wordWidth > maxWidth) {
-		cursorX = 0;
-		cursorY += lineHeight;
-	}
-
-	ctx.fillStyle = "black";
-	ctx.fillText(word, cursorX, cursorY);
-
-	cursorX += wordWidth + ctx.measureText(" ").width;
 }
 
 function traceWordOutline(startX, startY, word) {
@@ -189,4 +210,101 @@ function traceWordOutline(startX, startY, word) {
 			}
 		}
 	}
+}
+
+export async function setupScene(scene, bpm = 120) {
+	// Hide start button
+	const startButton = document.getElementById("updateScene");
+	startButton.style.display = "none";
+	// Scene & audio
+	scene.bpm = bpm;
+	scene.lastTimestamp = null;
+	scene.deltaTime = null;
+	scene.metronomeStarted = false;
+
+	Tone.Transport.bpm.value = scene.bpm;
+	Tone.Transport.timeSignature = 4;
+	Tone.Transport.loop = false;
+
+	const loaded = await SampleLibrary.load({
+		instruments: ['piano', 'bass-electric', 'bassoon', 'cello', 'clarinet', 'contrabass', 'french-horn', 'guitar-acoustic', 'guitar-electric', 'guitar-nylon', 'harp', 'organ', 'saxophone', 'trombone', 'trumpet', 'tuba', 'violin'],
+		baseUrl: "src/tonejs-instruments/samples/",
+	})
+	Object.assign(instruments, loaded);
+	console.log("SampleLibrary loaded: ", Object.keys(instruments));
+	await Tone.loaded();
+	instruments["piano"].toDestination();
+	instruments["piano"].triggerAttackRelease("C4", "8n", Tone.now());
+	const metroSynth = new Tone.MembraneSynth().toDestination();
+	Tone.Transport.scheduleRepeat((time) => {
+		metroSynth.triggerAttackRelease("C3", "8n", time);
+	}, "4n");
+	Tone.Transport.scheduleRepeat(() => {
+		const pos = Tone.Transport.position.split('.')[0];
+		document.getElementById("metronome-container").textContent = `Metronome: ${pos}`;
+	}, "8n");
+
+	await loadScales("assets/scales.json");
+	Tone.Transport.scheduleRepeat(() => {
+		const scaleName = pickRandomScale();
+		const scaleContainer = document.getElementById("scale-container");
+		scaleContainer.innerText = `Scale: ${scaleName}`;
+		console.log("New scale:", currentScale);
+	}, "1m");
+
+	// Words
+	scene.sentenceBuffer = "";
+	scene.wordBuffer = "";
+	scene.wordNeedsUpdate = false;
+	scene.clearSentenceBuffer = false;
+
+	await loadFontStyles("assets/word-styles.json");
+	scene.wordStyles = fontStyles;
+	scene.fontStyle = scene.wordStyles["default"];
+	const fontSize = scene.fontStyle[2][0] + Math.random() * (scene.fontStyle[2][1] - scene.fontStyle[2][0]);
+	scene.wordsCtx.font = `${scene.fontStyle[0]} ${scene.fontStyle[1]} ${fontSize}px ${scene.fontStyle[3]}`;
+	scene.wordsCtx.fillStyle = scene.fontStyle[5] || "black";
+	scene.wordsCtx.textBaseline = "alphabetic";
+
+	scene.cursorX = scene.width / 2;
+	scene.cursorY = scene.height - 20;
+
+	// Dot
+	scene.dot.g = 12;
+	scene.dot.width = scene.simWidth;
+	scene.dot.height = scene.simHeight;
+	scene.dot.xScale = scene.width / scene.simWidth;
+	scene.dot.yScale = scene.height / scene.simHeight;
+	scene.dot.rx = scene.dot.r / scene.dot.xScale; // radius in simulation units
+	scene.dot.ry = scene.dot.r / scene.dot.yScale; // radius in simulation units
+	const h = (scene.dot.g * 60 ** 2 / (8 * scene.bpm ** 2));
+	console.log(scene.height, scene.dot.g, h, scene.bpm);
+	scene.dot.y = scene.dot.height - h - scene.dot.r / scene.dot.yScale;
+	console.log("y:", scene.dot.y);
+	console.log("max y:", scene.dot.height - scene.dot.r / scene.dot.yScale);
+	scene.dot.maxSpeed =
+		Math.sqrt(2 * Math.abs(scene.dot.g) * (scene.dot.height - scene.dot.y - scene.dot.r / scene.dot.yScale));
+	console.log("max speed:", scene.dot.maxSpeed);
+
+	// Show start button
+	startButton.style.display = "inline";
+}
+
+async function loadFontStyles(src) {
+	const response = await fetch(src);
+	fontStyles = await response.json();
+}
+
+async function loadScales(src = "assets/scales.json") {
+	const response = await fetch(src);
+	scales = await response.json();
+	console.log("Loaded scales:", Object.keys(scales));
+}
+
+function pickRandomScale() {
+	const scaleNames = Object.keys(scales);
+	const randomName = scaleNames[Math.floor(Math.random() * scaleNames.length)];
+	currentScale = scales[randomName];
+	return randomName;
+	console.log("New scale:", randomName, currentScale);
 }

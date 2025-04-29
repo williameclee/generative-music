@@ -1,11 +1,13 @@
-import { ScrollingScene } from "./scrolling-scene.js"
+import { ScrollingScene, setupScene } from "./scrolling-scene.js"
 
 const inputBox = document.getElementById("input");
 const updateButton = document.getElementById("updateScene");
 const updateFrameButton = document.getElementById("updateSceneFrame");
 const canvas = document.getElementById("canvas");
 
-var scene = new ScrollingScene(canvas, 0.1, inputBox, updateButton);
+var bpm = 144;
+var scene = new ScrollingScene(canvas, inputBox);
+setupScene(scene, bpm);
 
 
 var lastTimestamp = null;
@@ -16,7 +18,7 @@ function update(timestamp) {
 		lastTimestamp = timestamp;
 	}
 
-	deltaTime = Math.min(100, (timestamp - lastTimestamp)); // seconds
+	deltaTime = Math.min(100, (timestamp - lastTimestamp)) / 1e3; // seconds
 	lastTimestamp = timestamp;
 
 	scene.simulate(deltaTime);
@@ -30,9 +32,10 @@ function update(timestamp) {
 }
 
 // Start
-requestAnimationFrame(update);
+// requestAnimationFrame(update);
 
 updateButton.addEventListener("click", () => {
+	Tone.start();
 	scene.updateScene = !scene.updateScene;
 	if (scene.updateScene) {
 		updateButton.innerText = "Pause";
@@ -42,8 +45,8 @@ updateButton.addEventListener("click", () => {
 	}
 });
 
-updateFrameButton.addEventListener("click", () => {
-	scene.updateScene = false;
-	scene.simulate(1e3 / 20);
-	scene.draw();
-});
+// updateFrameButton.addEventListener("click", () => {
+// 	scene.updateScene = false;
+// 	scene.simulate(1e3 / 20);
+// 	scene.draw();
+// });
