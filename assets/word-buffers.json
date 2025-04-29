@@ -1,0 +1,16 @@
+{
+  "nounCtx": {
+	"canvas": "nounCanvas",
+    "order": 1,
+	"scrollSpeed": 1,
+    "cursor": ["cursorX", "cursorY"],
+	"cursorOffset": [0, -20]
+  },
+  "adjCtx": {
+	"canvas": "adjCanvas",
+    "order": 0,
+	"scrollSpeed": 0.8,
+    "cursor": ["adjCursorX", "adjCursorY"],
+	"cursorOffset": [0, 0]
+  }
+}

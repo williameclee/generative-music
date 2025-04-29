@@ -11,16 +11,16 @@
 	</head>
 
 		<!-- <h2>✍️ Streaming Text + Outline Trace</h2> -->
-		<input id="input" placeholder="Type...">
-		<div class="">
-			<!-- <input type="checkbox" name="toggleSound" id="toggleSound">
-			<label for="toggleSound">Play sound</label> -->
+		<div class="" id="controls">
+			<input id="input" placeholder="Type...">
+			<!-- <input type="checkbox" name="toggleSound" id="toggleSound"> -->
+			<label for="toggleSound">Play sound</label>
 			<input type="button" value="Play" id="startScene">
 			<!-- <input type="button" value="Proceed 1 frame" id="updateSceneFrame"> -->
-			<span id="metronome-container"></span>
-			<span id="scale-container"></span>
+			<!-- <span id="metronome-container">Metronome: </span>
+			<span id="scale-container">Scale: </span> -->
 		</div>
-		<div class="div" >
+		<div class="div" id="canvas-container">
 			<canvas id="canvas" width="800" height="600"></canvas>
 		</div>
 		<!-- <div>
@@ -39,7 +39,5 @@
 		<script
 			src="src/tonejs-instruments/Tonejs-Instruments.js"></script>
 		<script type="module" src="src-words2music/words2music.js"></script>
-		<script type="module" src="src-words2music/words.js"></script>
-
 	</body>
 </html>

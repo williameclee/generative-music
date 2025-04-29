@@ -1,8 +1,62 @@
 {
-  "noun": ["", "bold", [100, 300], "Arial", ""],
-  "verb": ["italic", "", [50, 350], "Arial", "uppercase"],
-  "adjective": ["italic", "bold", [150, 400], "Times New Roman", ""],
-  "adverb": ["italic", "bold", [100, 300], "Times New Roman", ""],
-  "expression": ["", "", [100, 400], "Comic Sans MS", "uppercase"],
-  "default": ["", "", [100, 450], "Times New Roman", ""]
+  "noun": {
+    "buffer": "nounCtx",
+    "style": ["", "bold", [100, 300], "Arial", "", "black", "alphabetic"],
+    "offsetRatio": [1.0, 0.0]
+  },
+  "plural": {
+    "buffer": "nounCtx",
+    "style": ["", "bold", [50, 150], "Arial", "", "black", "alphabetic"],
+    "offsetRatio": [1.0, 0.0]
+  },
+  "pronoun": {
+    "buffer": "adjCtx",
+    "style": ["", "bold", [200, 400], "Arial", "uppercase", "#990000", "bottom"],
+    "offsetRatio": [1.0, 0.5]
+  },
+  "verb": {
+    "buffer": "nounCtx",
+    "style": ["italic", "", [50, 350], "Arial", "uppercase", "black", "alphabetic"],
+    "offsetRatio": [1.0, 0.0]
+  },
+  "adjective": {
+    "buffer": "adjCtx",
+    "style": ["italic", "bold", [400, 600], "Times New Roman", "", "#990000", "alphabetic"],
+    "offsetRatio": [1.0, 0.0]
+  },
+  "adverb": {
+    "buffer": "adjCtx",
+    "style": ["italic", "bold", [300, 500], "Times New Roman", "", "#990000", "alphabetic"],
+    "offsetRatio": [1.0, 0.0]
+  },
+  "conjunction": {
+    "buffer": "nounCtx",
+    "style": ["", "", [50, 100], "Arial", "", "black", "alphabetic"],
+    "offsetRatio": [0, 3.0]
+  },
+  "determiner": {
+    "buffer": "nounCtx",
+    "style": ["", "", [50, 100], "Arial", "", "black", "alphabetic"],
+    "offsetRatio": [0, 3.0]
+  },
+  "preposition": {
+    "buffer": "nounCtx",
+    "style": ["", "", [50, 100], "Arial", "", "black", "alphabetic"],
+    "offsetRatio": [0, 3.0]
+  },
+  "expression": {
+    "buffer": "nounCtx",
+    "style": ["", "", [100, 400], "Comic Sans MS", "uppercase", "black", "alphabetic"],
+    "offsetRatio": [1.0, 0.0]
+  },
+  "questionword": {
+    "buffer": "adjCtx",
+    "style": ["", "", [200, 300], "Comic Sans MS", "", "#bb0000", "alphabetic"],
+    "offsetRatio": [1, 1]
+  },
+  "default": {
+    "buffer": "nounCtx",
+    "style": ["", "", [50, 250], "Times New Roman", "", "black", "alphabetic"],
+    "offsetRatio": [1.0, 0.0]
+  }
 }

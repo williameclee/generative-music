@@ -2,19 +2,22 @@ export class Dot {
 	constructor(x, radius) {
 		this.x = x;
 		this.y = 0;
-		this.u = 1;
+		this.u = 0.3;
 		this.v = 0;
+		this.r = radius;
+		this.g = 12;
+		this.viscosity = 4;
 		this.xPrev = this.x;
 		this.yPrev = this.y;
 		this.uPrev = this.u;
 		this.vPrev = this.v;
 		this.xTarget = this.x;
 		this.yTarget = this.y;
-		this.r = radius;
 		this.colour = "blue";
 		this.hasCollided = false;
 		this.hasCollidedWithGround = false;
 		this.prevCollidedWithGround = false;
+		this.inSlowMo = false;
 		this.inFloatingMode = false;
 	}
 
@@ -32,7 +35,10 @@ export class Dot {
 		this.xTarget = this.x + this.u * deltaTime;
 
 		// y-motion
-		if (this.inFloatingMode) {
+		if (this.inSlowMo) {
+			this.v -= this.viscosity * this.v * deltaTime;
+			this.v += (0.2 * this.g) * deltaTime;
+		} else if (this.inFloatingMode) {
 			this.v += (-0.5 * this.g) * deltaTime;
 		} else {
 			this.v += this.g * deltaTime;
@@ -45,22 +51,31 @@ export class Dot {
 		// Check for collision
 		const collisionResult =
 			checkPathCollision(collisionImgBuffer, this.xPrev, this.yPrev, this.xTarget, this.yTarget, this.r, this.xScale, this.yScale);
-		this.hasCollided = collisionResult.hasCollided;
+		this.hasCollided = collisionResult.hasCollided > 0;
 		if (this.hasCollided) {
 			this.prevCollidedWithGround = false;
 		}
 		const yCollision = collisionResult.y;
 
 		// No collision
-		if (!this.hasCollided) {
+		if (collisionResult.hasCollided == 0) {
+			this.hasCollided = false;
 			this.x = this.xTarget;
 			this.y = this.yTarget;
 			this.inFloatingMode = false;
+			this.inSlowMo = false;
+			return;
+		} else if (collisionResult.hasCollided == 2) {
+			this.hasCollided = true;
+			this.x = this.xTarget;
+			this.y = this.yTarget;
+			this.inFloatingMode = false;
+			this.inSlowMo = true;
 			return;
 		}
 
 		// Collision detected, but in floating mode, so no need to push out
-		if (this.inFloatingMode) {
+		if (this.inFloatingMode || this.inSlowMo) {
 			this.x = this.xTarget;
 			this.y = this.yTarget;
 			return;
@@ -70,11 +85,20 @@ export class Dot {
 		const xTargetCollision = this.xTarget;
 		const yTargetCollision = yCollision - (this.yTarget - yCollision);
 
-		if (checkCollision(collisionImgBuffer, xTargetCollision, yTargetCollision, this.r, this.xScale, this.yScale)) {
+		const origCollisionResult = checkCollision(
+			collisionImgBuffer, xTargetCollision, yTargetCollision,
+			this.r, this.xScale, this.yScale);
+		if (origCollisionResult == 1) {
 			// Cannot push out of collision: enter floating mode
 			this.x = this.xTarget;
 			this.y = this.yTarget;
 			this.inFloatingMode = true;
+			return;
+		} else if (origCollisionResult == 2) {
+			// Soft collision: enter floating mode
+			this.x = this.xTarget;
+			this.y = this.yTarget;
+			this.inSlowMo = true;
 			return;
 		}
 
@@ -136,19 +160,6 @@ export class Dot {
 		ctx.arc(this.x * this.xScale, this.y * this.yScale, this.r, 0, Math.PI * 2);
 		ctx.fill();
 	}
-
-	async playSound(y, snapPitch = true) {
-		Tone.start();
-		const minPitch = 110; // lowest frequency (Hz)
-		const maxPitch = 880; // highest frequency (Hz)
-
-		const normFactor = Math.max(Math.min(1 - (y / this.height), 1), 0); // 1 at top, 0 at bottom
-		var frequency = minPitch + normFactor * (maxPitch - minPitch);
-		if (snapPitch) {
-			frequency = noteId2frequency(frequency2noteId(frequency, true));
-		}
-		synth.triggerAttackRelease(frequency, "8n");
-	}
 }
 
 function checkCollision(collisionImgBuffer, dotX, dotY, radius, xScale, yScale) {
@@ -160,19 +171,25 @@ function checkCollision(collisionImgBuffer, dotX, dotY, radius, xScale, yScale) 
 
 		// Make sure sample inside canvas
 		if (sampleX < 0 || sampleX >= canvas.width || sampleY < 0 || sampleY >= canvas.height) continue;
-		let pixel;
+		let alpha;
+		let r;
 		try {
 			const alphaId = (sampleY * collisionImgBuffer.width + sampleX) * 4 + 3;
-			pixel = collisionImgBuffer.data[alphaId];
+			alpha = collisionImgBuffer.data[alphaId];
+			const rId = (sampleY * collisionImgBuffer.width + sampleX) * 4;
+			r = collisionImgBuffer.data[rId];
 		} catch (e) {
 			console.error("Error getting pixel data at ", sampleX, sampleY, ": ", e);
 		}
 
-		if (pixel > 0) {
-			return true; // collision detected
+		if (alpha > 0) {
+			if (r > 50) {
+				return 2; // soft collision
+			}
+			return 1; // hard collision
 		}
 	}
-	return false; // no collision
+	return 0; // no collision
 }
 
 function checkPathCollision(collisionImgBuffer, startX, startY, endX, endY, radius, xScale, yScale, steps = 6) {
@@ -187,11 +204,12 @@ function checkPathCollision(collisionImgBuffer, startX, startY, endX, endY, radi
 			continue;
 		}
 
-		if (checkCollision(collisionImgBuffer, x, y, radius, xScale, yScale)) {
-			return { hasCollided: true, x: prevX, y: prevY }
+		const collisionResult = checkCollision(collisionImgBuffer, x, y, radius, xScale, yScale)
+		if (collisionResult > 0) {
+			return { hasCollided: collisionResult, x: prevX, y: prevY }
 		}
 		prevX = x;
 		prevY = y;
 	}
-	return { hasCollided: false, x: endX, y: endY }
+	return { hasCollided: 0, x: endX, y: endY }
 }

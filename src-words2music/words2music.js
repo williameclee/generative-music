@@ -8,15 +8,14 @@ var scene = new ScrollingScene(canvas, inputBox);
 console.log("Scene:", scene);
 
 // Set up the scene
-const startButton = document.getElementById("startScene");
-console.log("Start button:", startButton);
-if (startButton) {
+const controlsDiv = document.getElementById("controls");
+if (controlsDiv) {
 	console.log("Hiding start button");
-	startButton.style.display = "none";
+	controlsDiv.style.display = "none";
 }
 setupScene(scene, bpm).then(() => {
-	if (startButton) {
-		startButton.style.display = "inline";
+	if (controlsDiv) {
+		controlsDiv.style.display = "block";
 	}
 });
 
@@ -29,13 +28,20 @@ function update(timestamp) {
 	if (lastTimestamp == null) {
 		lastTimestamp = timestamp;
 	}
+	if (scene.dot.hasCollidedWithGround && !scene.metronomeStarted) {
+		Tone.start();
+		Tone.Transport.start();
+		scene.metronomeStarted = true;
+	}
 
 	deltaTime = Math.min(100, (timestamp - lastTimestamp)) / 1e3; // seconds
 	lastTimestamp = timestamp;
 
 	scene.simulate(deltaTime);
-	scene.play();
 	scene.draw();
+	if (soundOn) {
+		scene.play();
+	}
 
 	// if (Tone.Transport.seconds > 10) {
 	// 	Tone.Transport.stop();
@@ -54,19 +60,31 @@ function update(timestamp) {
 // requestAnimationFrame(update);
 
 // Starting and stopping everything 
-if (startButton) {
-	startButton.addEventListener("click", () => {
+const startScene = document.getElementById("startScene");
+if (startScene) {
+	startScene.addEventListener("click", () => {
+		console.log("Starting scene");
 		Tone.start();
 		scene.updateScene = !scene.updateScene;
 		if (scene.updateScene) {
-			startButton.innerText = "Pause";
+			startScene.value = "Pause";
 			requestAnimationFrame(update);
 		} else {
-			startButton.innerText = "Resume";
+			startScene.value = "Resume";
 		}
 	});
 }
 
+
+// Toggle sound
+var soundOn = true;
+const toggleSoundBox = document.getElementById("toggleSound");
+if (toggleSoundBox) {
+	soundOn = toggleSoundBox.checked;
+	toggleSoundBox.addEventListener("click", () => {
+		soundOn = toggleSoundBox.checked;
+	});
+}
 
 // Update a single frame (for debugging)
 const updateFrameButton = document.getElementById("updateSceneFrame");

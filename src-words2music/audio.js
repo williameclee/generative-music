@@ -15,10 +15,11 @@ export async function loadIntsruments() {
 let lastSoundTime = 0;
 
 export async function playDotSound(y, instrument, scale = null, length = "8n", volume = 0, snapTime = null) {
-	if (Tone.now() - lastSoundTime < 0.03) {
+	if (Tone.now() - lastSoundTime < 0.02) {
 		console.log("Too soon to play sound");
 		return;
 	}
+	lastSoundTime = Tone.now();
 
 	// Handle frequency
 	var frequency;
@@ -68,23 +69,6 @@ export async function playDotSound(y, instrument, scale = null, length = "8n", v
 	}
 	const time = snap2subdivision(snapTime);
 	instrument.triggerAttackRelease(frequency, length, time);
-}
-
-export async function playBaseSound(dot) {
-	let time;
-	// if (!dot.prevCollidedWithGround) {
-	// 	time = snap2subdivision("16n");
-	// 	// const drift = Tone.now() - time;
-	// 	// console.log("Drift:", drift);
-	// 	// Tone.Transport.seconds += drift;
-	// } else {
-	// 	// Ground bounce: snap clean to 4n
-	// 	time = snap2subdivision("4n");
-	// }
-	time = snap2subdivision("4n");
-
-	// dot.lastDownbeatTime = time; // update anchor
-	synth.triggerAttackRelease("C3", "8n", time);
 }
 
 function snap2subdivision(subdivision = "8n", tol = 0.03) {
