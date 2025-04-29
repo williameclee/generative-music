@@ -1,5 +1,8 @@
-export let instruments = {};
+// Some simple synthetic instruments
+export const metroSynth = new Tone.MembraneSynth().toDestination();
 
+// Load tonejs-instruments sample library
+export let instruments = {};
 export async function loadIntsruments() {
 	instruments = await SampleLibrary.load({
 		instruments: ['piano', 'bass-electric', 'bassoon', 'cello', 'clarinet', 'contrabass', 'french-horn', 'guitar-acoustic', 'guitar-electric', 'guitar-nylon', 'harp', 'organ', 'saxophone', 'trombone', 'trumpet', 'tuba', 'violin'],
@@ -9,29 +12,62 @@ export async function loadIntsruments() {
 	await Tone.loaded();
 }
 
-export async function playDotSound(dot, instrument, volume = 0, scale = null, snapTime = null) {
-	const minPitch = 220; // lowest frequency (Hz)
-	const maxPitch = 880; // highest frequency (Hz)
+let lastSoundTime = 0;
 
-	const normFactor = Math.max(Math.min(1 - (dot.y / dot.height), 1), 0); // 1 at top, 0 at bottom
-	var frequency = minPitch + normFactor * (maxPitch - minPitch);
-	if (scale!== null) {
-		// frequency = noteId2frequency(frequency2noteId(frequency, true));
-		frequency = snapFrequencyToScale(frequency, scale);
+export async function playDotSound(y, instrument, scale = null, length = "8n", volume = 0, snapTime = null) {
+	if (Tone.now() - lastSoundTime < 0.03) {
+		console.log("Too soon to play sound");
+		return;
 	}
 
-	// Set volume if specified
+	// Handle frequency
+	var frequency;
+	if (scale === "all") {
+		let yNorm;
+		if (typeof y === "number") {
+			yNorm = y;
+		} else {
+			yNorm = Math.max(Math.min((1 - y.y / y.height), 1), 0); // 1 at top, 0 at bottom
+			yNorm = 55 + yNorm * (880 - 55);
+		}
+		frequency = noteId2frequency(frequency2noteId(yNorm, true));
+	} else if (typeof scale === "string" || typeof scale === "number") {
+		frequency = scale;
+	} else if (Array.isArray(scale)) {
+		let yNorm;
+		if (typeof y === "number") {
+			yNorm = y;
+		} else {
+			yNorm = Math.max(Math.min((1 - y.y / y.height), 1), 0); // 1 at top, 0 at bottom
+		}
+		frequency = snapPos2scale(yNorm, scale);
+	}
+
+	// Handle instrument
+	if (typeof instrument === "string") {
+		instrument = instruments[instrument]
+	} else if (typeof instrument === "object") {
+		instrument = instrument;
+	}
+
+	// Handle volume
 	if (volume !== null) {
-		instruments[instrument].volume.value = volume; // in dB (e.g., -12)
+		instrument.volume.value = volume; // in dB (e.g., -12)
 	}
-	instruments[instrument].toDestination();
+	instrument.toDestination();
 
+	// Handle length
+	if (length == null) {
+		length = "8n";
+	}
+
+	// Handle rhythm snapping
 	if (snapTime == null) {
-		instruments[instrument].triggerAttackRelease(frequency, "8n");
+		instrument.triggerAttackRelease(frequency, "8n");
 		return;
 	}
 	const time = snap2subdivision(snapTime);
-	instruments[instrument].triggerAttackRelease(frequency, "4n", time);
+	instrument.triggerAttackRelease(frequency, length, time);
 }
 
 export async function playBaseSound(dot) {
@@ -51,17 +87,15 @@ export async function playBaseSound(dot) {
 	synth.triggerAttackRelease("C3", "8n", time);
 }
 
-function snap2subdivision(subdivision = "8n") {
+function snap2subdivision(subdivision = "8n", tol = 0.03) {
 	const now = Tone.now();
-	console.log("snapping")
 	const nextTime = Tone.Transport.nextSubdivision(subdivision);
 
 	// Check current time is not close to the subdivision
 	const nowTime = nextTime - Tone.Time(subdivision).toSeconds();
 
-	if (Math.abs(nowTime - now) < 0.03) {
-		// console.log("Current time is close to the subdivision, using it");
-		return now + 0.03;
+	if (Math.abs(nowTime - now) < tol) {
+		return now + 0.001;
 	}
 
 	// return nextTime;
@@ -127,17 +161,18 @@ export async function initialseSound() {
 	}
 }
 
-function snapFrequencyToScale(frequency, currentScale = ["C4", "D4", "E4", "F4", "G4", "A4", "B4"]) {
-	console.log("Snapping frequency to scale:", frequency, currentScale);
+function snapPos2scale(y, currentScale = ["C4", "D4", "E4", "F4", "G4", "A4", "B4"]) {
 	const scaleFreqs = currentScale.map(note => Tone.Frequency(note).toFrequency());
+	// Lerp y to the bound of the scale
+	const freq = Math.min(...scaleFreqs) + y * (Math.max(...scaleFreqs) - Math.min(...scaleFreqs));
 
 	let closest = scaleFreqs[0];
-	let minDiff = Math.abs(frequency - closest);
+	let minDiff = Math.abs(freq - closest);
 
-	for (let f of scaleFreqs) {
-		const diff = Math.abs(frequency - f);
+	for (let scaleFreq of scaleFreqs) {
+		const diff = Math.abs(freq - scaleFreq);
 		if (diff < minDiff) {
-			closest = f;
+			closest = scaleFreq;
 			minDiff = diff;
 		}
 	}

@@ -1,11 +1,12 @@
-import { Dot } from "./dot-physics.js"
-import { getWordType, addWordToCanvas } from "./word-processing.js"
-import { playDotSound, playBaseSound } from "./scene-audio.js";
-import { loadIntsruments, instruments } from "./scene-audio.js";
+import { Dot } from "./dot.js"
+import { getWordType, addWordToCanvas } from "./words.js"
+import { playDotSound, playBaseSound } from "./audio.js";
+import { loadIntsruments, instruments, metroSynth } from "./audio.js";
 
 let fontStyles = {};
 let scales = {};  // where all scales will be stored
 let currentScale = [];  // active scale during playback
+
 export class ScrollingScene {
 	constructor(canvas, inputElement) {
 		this.mainCtx = canvas.getContext("2d");
@@ -23,39 +24,10 @@ export class ScrollingScene {
 		this.wordsCanvas.width = this.width * 5;
 		this.wordsCanvas.height = this.height;
 		this.wordsCtx = this.wordsCanvas.getContext("2d", { willReadFrequently: true });
-		// document.body.appendChild(this.wordsCanvas);
 		this.inputElement = inputElement;
 		this.dot = new Dot(1, 5);
-		this.dotXTarget = this.dot.x;
-
+		this.dotXTarget = this.dot.x; // where the dot should be
 		this.clearSentenceBuffer = false;
-		this.inputElement.addEventListener("input", e => {
-			const value = e.target.value;
-			const lastChar = value[value.length - 1];
-
-			if (this.clearSentenceBuffer) {
-				this.sentenceBuffer = "";
-				this.clearSentenceBuffer = false;
-			}
-
-			if ((lastChar === " " || lastChar === "\n")) {
-				this.wordNeedsUpdate = true;
-				this.sentenceBuffer = this.sentenceBuffer + " " + value;
-				input.value = "";
-				const punctuationRegex = /[.,!?;:]/;
-				if (punctuationRegex.test(this.wordBuffer)) {
-					this.clearSentenceBuffer = true;
-				}
-			} else {
-				this.wordBuffer = value;
-			}
-
-			const wordBufferContainer = document.getElementById("word-buffer-container");
-			wordBufferContainer.innerText = `Word: ${this.wordBuffer}`;
-			const sentenceBufferContainer = document.getElementById("sentence-buffer-container");
-			sentenceBufferContainer.innerText = `Sentence: ${this.sentenceBuffer}`;
-		});
-
 		this.updateScene = false;
 	}
 
@@ -70,10 +42,14 @@ export class ScrollingScene {
 			}
 
 			addWordToCanvas(this.wordsCtx, this.wordBuffer, this, this.fontStyle);
-			const wordTypeContainer = document.getElementById("word-type-container");
-			wordTypeContainer.innerText = wordType;
 			this.wordBuffer = "";
 			this.wordNeedsUpdate = false;
+
+			// Debugging info
+			const wordTypeContainer = document.getElementById("word-type-container");
+			if (wordTypeContainer) {
+				wordTypeContainer.innerText = wordType;
+			}
 		}
 
 		const wordsImgBuffer = this.wordsCtx.getImageData(0, 0, this.width, this.height);
@@ -97,24 +73,17 @@ export class ScrollingScene {
 			Tone.Transport.start();
 			this.metronomeStarted = true;
 		}
+
 		// Handle dot effects
-		// const soundOn = document.getElementById("toggleSound").checked;
-		// if (soundOn) {
 		if (this.dot.hasCollidedWithGround) {
-			try {
-				// playBaseSound(this.dot);
-				playDotSound(this.dot, "piano", 0, currentScale, "4n");
-			} catch (e) {
-				console.warning("Error playing sound:", e);
-			}
+			// Ground bounce
+			this.dot.colour = "red";
 		} else if (this.dot.inFloatingMode) {
 			// Floating mode
 			this.dot.colour = "green";
-			playDotSound(this.dot, "guitar-nylon", -20, currentScale, "16n");
 		} else if (this.dot.hasCollided) {
 			// Collision
 			this.dot.colour = "red";
-			playDotSound(this.dot, "piano", 0, currentScale, "8n");
 		} else {
 			// Normal mode
 			this.dot.colour = "blue";
@@ -123,6 +92,24 @@ export class ScrollingScene {
 		this.dot.draw(this.mainCtx);
 		this.mainCtx.fillStyle = "black";
 		// drawCursor(this.mainCtx, this.cursorX, this.cursorY);
+	}
+
+	play() {
+		if (this.dot.hasCollidedWithGround) {
+			// Ground bounce
+			try {
+				playDotSound(this.dot, "piano", "C2", "2n", -10, "4n");
+			} catch (e) {
+				console.warning("Error playing sound:", e);
+			}
+		} else if (this.dot.inFloatingMode) {
+			// Floating mode
+			playDotSound(this.dot, new Tone.MembraneSynth().toDestination(),
+				"all", "16n", -20, "16n");
+		} else if (this.dot.hasCollided) {
+			// Collision
+			playDotSound(this.dot, "piano", currentScale, "8n", 0, "8n");
+		}
 	}
 }
 
@@ -213,9 +200,46 @@ function traceWordOutline(startX, startY, word) {
 }
 
 export async function setupScene(scene, bpm = 120) {
-	// Hide start button
-	const startButton = document.getElementById("updateScene");
-	startButton.style.display = "none";
+	// User input
+	scene.inputElement.addEventListener("input", e => {
+		const value = e.target.value;
+		const lastChar = value[value.length - 1];
+
+		if (scene.clearSentenceBuffer) {
+			scene.sentenceBuffer = "";
+			scene.clearSentenceBuffer = false;
+		}
+
+		if ((lastChar === " " || lastChar === "\n")) {
+			scene.wordNeedsUpdate = true;
+			scene.sentenceBuffer = scene.sentenceBuffer + " " + value;
+			input.value = "";
+			const punctuationRegex = /[.,!?;:]/;
+			if (punctuationRegex.test(scene.wordBuffer)) {
+				scene.clearSentenceBuffer = true;
+			}
+		} else {
+			scene.wordBuffer = value;
+		}
+
+		// Debugging info
+		const wordBufferContainer = document.getElementById("word-buffer-container");
+		if (wordBufferContainer) {
+			wordBufferContainer.innerText = `Word: ${scene.wordBuffer}`;
+		}
+		const sentenceBufferContainer = document.getElementById("sentence-buffer-container");
+		if (sentenceBufferContainer) {
+			sentenceBufferContainer.innerText = `Sentence: ${scene.sentenceBuffer}`;
+		}
+	});
+
+	scene.inputElement.addEventListener("keydown", (e) => {
+		if (!(e.key === "Backspace" || e.key === "Delete")) {
+			return;
+		}
+		playDotSound(null, "piano", "C7", "4n", -10, "8n");
+	});
+
 	// Scene & audio
 	scene.bpm = bpm;
 	scene.lastTimestamp = null;
@@ -233,11 +257,10 @@ export async function setupScene(scene, bpm = 120) {
 	Object.assign(instruments, loaded);
 	console.log("SampleLibrary loaded: ", Object.keys(instruments));
 	await Tone.loaded();
-	instruments["piano"].toDestination();
-	instruments["piano"].triggerAttackRelease("C4", "8n", Tone.now());
-	const metroSynth = new Tone.MembraneSynth().toDestination();
+
 	Tone.Transport.scheduleRepeat((time) => {
-		metroSynth.triggerAttackRelease("C3", "8n", time);
+		metroSynth.triggerAttackRelease("G2", "8n", time);
+		// metroSynth.triggerAttackRelease(currentScale[0], "8n", time);
 	}, "4n");
 	Tone.Transport.scheduleRepeat(() => {
 		const pos = Tone.Transport.position.split('.')[0];
@@ -285,9 +308,6 @@ export async function setupScene(scene, bpm = 120) {
 	scene.dot.maxSpeed =
 		Math.sqrt(2 * Math.abs(scene.dot.g) * (scene.dot.height - scene.dot.y - scene.dot.r / scene.dot.yScale));
 	console.log("max speed:", scene.dot.maxSpeed);
-
-	// Show start button
-	startButton.style.display = "inline";
 }
 
 async function loadFontStyles(src) {

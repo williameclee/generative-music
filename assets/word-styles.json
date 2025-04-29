@@ -1,8 +1,8 @@
 {
-  "noun": ["", "bold", [100, 250], "Arial", ""],
-  "verb": ["italic", "", [50, 300], "Arial", "uppercase"],
-  "adjective": ["italic", "bold", [150, 350], "Times New Roman", ""],
-  "adverb": ["italic", "bold", [100, 250], "Times New Roman", ""],
-  "expression": ["", "", [100, 390], "Comic Sans MS", "uppercase"],
-  "default": ["", "", [100, 400], "Times New Roman", ""]
+  "noun": ["", "bold", [100, 300], "Arial", ""],
+  "verb": ["italic", "", [50, 350], "Arial", "uppercase"],
+  "adjective": ["italic", "bold", [150, 400], "Times New Roman", ""],
+  "adverb": ["italic", "bold", [100, 300], "Times New Roman", ""],
+  "expression": ["", "", [100, 400], "Comic Sans MS", "uppercase"],
+  "default": ["", "", [100, 450], "Times New Roman", ""]
 }
