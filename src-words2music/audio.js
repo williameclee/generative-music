@@ -86,7 +86,7 @@ export async function playDotSound(y, instrument, scale = null, length = "8n", v
 	const time = snap2subdivision(snapTime);
 	try {
 		const lastTime = y.lastQuickAudioTime;
-		if (Math.abs(time - lastTime) < 0.01) {
+		if (Math.abs(time - lastTime) < 0.02) {
 			console.log("Skipping sound: too close to last sound");
 			return;
 		}

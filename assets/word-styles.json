@@ -1,67 +1,67 @@
 {
   "noun": {
     "buffer": "nounCtx",
-    "style": ["", "bold", [100, 300], "Arial", "", "black", "alphabetic"],
-    "offsetRatio": [1.0, 0.0]
+    "style": ["", "bold", [0.15, 0.40], "Arial", "", "black", "alphabetic"],
+    "priority": "right"
   },
   "plural": {
     "buffer": "nounCtx",
-    "style": ["", "bold", [50, 150], "Arial", "", "black", "alphabetic"],
-    "offsetRatio": [1.0, 0.0]
+    "style": ["", "bold", [0.05, 0.20], "Arial", "", "black", "alphabetic"],
+    "priority": "right"
   },
   "pronoun": {
     "buffer": "adjCtx",
-    "style": ["", "bold", [200, 400], "Arial", "uppercase", "#990000", "bottom"],
-    "offsetRatio": [1.0, 0.5]
+    "style": ["", "bold", [0.25, 0.50], "Georgia", "uppercase", "#990000", "alphabetic"],
+    "priority": "down"
   },
   "verb": {
     "buffer": "nounCtx",
-    "style": ["italic", "", [50, 350], "Arial", "uppercase", "black", "alphabetic"],
-    "offsetRatio": [1.0, 0.0]
+    "style": ["italic", "bold", [0.05, 0.45], "Arial", "uppercase", "black", "alphabetic"],
+    "priority": "right"
   },
   "adjective": {
     "buffer": "adjCtx",
-    "style": ["italic", "bold", [400, 600], "Times New Roman", "", "#990000", "alphabetic"],
-    "offsetRatio": [1.0, 0.0]
+    "style": ["italic", "bold", [0.50, 0.75], "Times New Roman", "", "#990000", "alphabetic"],
+    "priority": "right"
   },
   "adverb": {
     "buffer": "adjCtx",
-    "style": ["italic", "bold", [300, 500], "Times New Roman", "", "#990000", "alphabetic"],
-    "offsetRatio": [1.0, 0.0]
+    "style": ["italic", "bold", [0.40, 0.65], "Times New Roman", "", "#990000", "alphabetic"],
+    "priority": "right"
   },
   "conjunction": {
     "buffer": "nounCtx",
-    "style": ["", "", [50, 100], "Arial", "", "black", "alphabetic"],
-    "offsetRatio": [0, 3.0]
+    "style": ["", "", [0.05, 0.15], "Lato", "", "black", "alphabetic"],
+    "priority": "up"
   },
   "determiner": {
     "buffer": "nounCtx",
-    "style": ["", "", [50, 100], "Arial", "", "black", "alphabetic"],
-    "offsetRatio": [0, 3.0]
+    "style": ["", "", [0.05, 0.15], "Lato", "", "black", "alphabetic"],
+    "priority": "up right"
   },
   "preposition": {
     "buffer": "nounCtx",
-    "style": ["", "", [50, 100], "Arial", "", "black", "alphabetic"],
-    "offsetRatio": [0, 3.0]
+    "style": ["", "", [0.05, 0.15], "Lato", "", "black", "alphabetic"],
+    "priority": "up right"
   },
   "expression": {
     "buffer": "nounCtx",
-    "style": ["", "", [100, 400], "Comic Sans MS", "uppercase", "black", "alphabetic"],
-    "offsetRatio": [1.0, 0.0]
+    "style": ["", "bold", [0.15, 0.50], "Futura", "uppercase", "black", "alphabetic"],
+    "priority": "right"
   },
   "questionword": {
     "buffer": "adjCtx",
-    "style": ["", "", [200, 300], "Comic Sans MS", "", "#bb0000", "alphabetic"],
-    "offsetRatio": [1, 1]
+    "style": ["italic", "", [0.25, 0.40], "Futura", "", "#bb0000", "alphabetic"],
+    "priority": "up right"
   },
   "default": {
     "buffer": "nounCtx",
-    "style": ["", "", [50, 250], "Times New Roman", "", "black", "alphabetic"],
-    "offsetRatio": [1.0, 0.0]
+    "style": ["", "", [0.05, 0.30], "Times New Roman", "", "black", "alphabetic"],
+    "priority": "right"
   },
   "custom-sentence": {
     "buffer": "questionCtx",
-    "style": ["", "", [40, 40], "monospace", "", "black", "alphabetic"],
-    "offsetRatio": [1.0, 0.0]
+    "style": ["", "", [0.05, 0.05], "monospace", "", "black", "alphabetic"],
+    "priority": "right"
   }
 }

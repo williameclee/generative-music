@@ -2,8 +2,8 @@ export class Dot {
 	constructor(x, radius) {
 		this.x = x;
 		this.y = 0;
-		this.u = 1;
-		this.u0 = 1;
+		this.u = 0;
+		this.u0 = 1.2;
 		this.v = 0;
 		this.r = radius;
 		this.g = 12;
@@ -23,7 +23,7 @@ export class Dot {
 		this.inFloatingMode = false;
 	}
 
-	update(deltaTime, collisionImgBuffer) {
+	update(deltaTime, collisionImgBuffer, idleTime) {
 		this.xPrev = this.x;
 		this.uPrev = this.u;
 		this.yPrev = this.y;
@@ -34,11 +34,19 @@ export class Dot {
 		}
 
 		// x-motion
-		if (this.inSlowMo) {
-			this.u -= this.hViscosity * this.u * deltaTime;
-			this.u = Math.max(this.u, this.u0 * 0.5);
+		if (idleTime > 4) {
+			this.u -= this.hViscosity * this.u * deltaTime * 0.5;
 		} else {
-			this.u += this.hViscosity * (this.u0 - this.u) * deltaTime;
+			if (this.inSlowMo) {
+				this.u -= this.hViscosity * this.u * deltaTime;
+			} else {
+				if (idleTime > 1) {
+					this.u += this.hViscosity * (this.u0 - this.u) * deltaTime;
+				} else {
+					this.u += this.hViscosity * (this.u0 * 1.5 - this.u) * deltaTime;
+				}
+			}
+			this.u = Math.max(this.u, this.u0 * 0.5);
 		}
 		this.xTarget = this.x + this.u * deltaTime;
 

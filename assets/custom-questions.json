@@ -1,6 +1,47 @@
 [
-	[
-		"I don't know you.",
-		"What's your name?"
-	]
+  {
+    "scale": "D_minor",
+    "bpm": "120",
+    "content": ["I don't know you.", "What's your name?"]
+  },
+  {
+    "scale": "B_minor",
+    "bpm": "110",
+    "content": ["What's the biggest regret", "in your life", "?"]
+  },
+  {
+    "scale": "F#_minor",
+    "bpm": "150",
+    "content": ["When did you stopped", "responding to your", "parent's messages?"]
+  },
+  {
+    "scale": "E_minor",
+    "bpm": "160",
+    "content": ["Do you fear the", "advancements of", "technology?"]
+  },
+  {
+    "scale": "G_major",
+    "bpm": "144",
+    "content": ["Are you close", "with your family?", "Do you", "want to be?"]
+  },
+  {
+    "scale": "C_minor",
+    "bpm": "130",
+    "content": ["What makes you think", "you", "deserve the life", "you were given?"]
+  },
+  {
+    "scale": "A_minor",
+    "bpm": "90",
+    "content": ["How do you know ", "you don't love someone?"]
+  },
+  {
+    "scale": "A_major",
+    "bpm": "150",
+    "content": ["Who is", "the most important", "person in your life?"]
+  },
+  {
+    "scale": "F_minor",
+    "bpm": "160",
+    "content": ["What's the biggest", "test", "life has ever", "thrown your way?"]
+  }
 ]

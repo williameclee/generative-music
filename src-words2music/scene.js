@@ -1,5 +1,5 @@
 import { Dot } from "./dot.js"
-import { loadFontStyles, addWord2canvas, loadWordBuffers, wordBuffers, loadCustomQuestions, customQuestions, printSentence2canvas } from "./words.js"
+import { loadFontStyles, addWord2canvas, addWord2canvasWbb, loadWordBuffers, wordBuffers, loadCustomQuestions, customQuestions, printSentence2canvas } from "./words.js"
 import { playDotSound } from "./audio.js";
 import { loadIntsruments, instruments, metroSynth, glitchSynth, teleportSynth } from "./audio.js";
 
@@ -26,21 +26,33 @@ export class ScrollingScene {
 		this.inputElement = inputElement;
 		this.dot = new Dot(1, 5);
 		this.dotXTarget = this.dot.x; // where the dot should be
-		this.clearSentenceBuffer = false;
-		this.updateScene = false;
-		this.hasPrintedSentence = false;
-		this.lastQuickAudioTime = 0;
 	}
 
 	simulate(deltaTime) {
 		if (this.wordNeedsUpdate) {
-			addWord2canvas(this);
+			addWord2canvasWbb(this);
 			this.wordBuffer = "";
 			this.wordNeedsUpdate = false;
+			// 
+			this.lastUpdateTime = Tone.now();
+			this.hasPrintedSentence = false;
 		}
-		if (!this.hasPrintedSentence) {
-			printSentence2canvas(customQuestions[0], this)
+
+		const idleTime = Tone.now() - this.lastUpdateTime;
+		if ((idleTime > 7 || this.justStarted) && this.dot.u < 0.1 && !this.hasPrintedSentence) {
+			const questionId = getNewQuestion(this);
+			printSentence2canvas(customQuestions[questionId]["content"], this);
+			currentScale = scales[customQuestions[questionId]["scale"]];
+			console.log("New scale:", currentScale);
 			this.hasPrintedSentence = true;
+			this.justStarted = false;
+			const bpm = customQuestions[questionId]["bpm"];
+			if (bpm) {
+				Tone.Transport.bpm.value = bpm;
+				this.bpm = bpm;
+				calculateMaxSpeed(this.dot, this.bpm);
+				console.log("max speed: ", this.bpm, this.dot.maxSpeed);
+			}
 		}
 		this.wordsCtx.clearRect(0, 0,
 			this.wordsCtx.canvas.width, this.wordsCtx.canvas.height);
@@ -51,22 +63,22 @@ export class ScrollingScene {
 		}
 
 		const wordsImgBuffer = this.wordsCtx.getImageData(0, 0, this.width, this.height);
-		this.dot.update(deltaTime, wordsImgBuffer);
+		this.dot.update(deltaTime, wordsImgBuffer, Tone.now() - this.lastUpdateTime);
 
 		const scrollLi = Math.round(
 			(this.dot.x - this.dotXTarget) * this.dot.xScale);
 		const scrollL = scrollLi / this.dot.xScale;
-		scrollCanvas(this.wordsCtx, scrollLi, this.periodic);
+		scrollCanvas(this.wordsCtx, scrollLi);
 		this.dot.x -= scrollL;
 		this.dot.xPrev -= scrollL;
 
 		for (let i = 0; i < this.wordBufferNames.length; i++) {
-			const cursorName = wordBuffers[this.wordBufferNames[i]]["cursor"][0];
 			const scrollFactor = wordBuffers[this.wordBufferNames[i]]["scrollSpeed"] || 1.0;
 			const sctollLengthLayeri = Math.round(scrollLi * scrollFactor);
-			scrollCanvas(this[this.wordBufferNames[i]], sctollLengthLayeri, this.periodic);
-			this[cursorName] -= sctollLengthLayeri;
-			this[cursorName] = Math.max(this[cursorName], this.width / 2);
+			scrollCanvas(this[this.wordBufferNames[i]],
+				sctollLengthLayeri);
+			scrollCanvas(this[wordBuffers[this.wordBufferNames[i]]["boundingBox"] + "Ctx"],
+				sctollLengthLayeri);
 		}
 	}
 
@@ -81,7 +93,7 @@ export class ScrollingScene {
 			this.dot.colour = "red";
 		} else if (this.dot.inSlowMo) {
 			// Floating mode
-			this.dot.colour = "green";
+			this.dot.colour = "orange";
 		} else if (this.dot.inFloatingMode) {
 			// Floating mode
 			this.dot.colour = "orange";
@@ -94,15 +106,15 @@ export class ScrollingScene {
 		}
 		// }
 		this.dot.draw(this.mainCtx);
-		// drawCursor(this.mainCtx, this.cursorX, this.cursorY, "black");
-		// drawCursor(this.mainCtx, this.adjCursorX, this.adjCursorY, "red");
 	}
 
 	play() {
 		if (this.dot.hasCollidedWithGround) {
 			// Ground bounce
 			try {
-				playDotSound(this.dot, "piano", "C2", "2n", -10, "4n");
+				playDotSound(this.dot, "piano",
+					currentScale[0].replace("4", "2").replace("3", "2"),
+					"2n", -10, "4n");
 			} catch (e) {
 				console.warning("Error playing sound:", e);
 			}
@@ -110,13 +122,16 @@ export class ScrollingScene {
 			// playDotSound(this.dot, "harp",
 			// 	currentScale, "4n", -20, "8n");
 			playDotSound(this.dot, teleportSynth,
-				currentScale, "4n", -10, "8n");
+				currentScale, "2n", -10, "8n");
+			this.lastUpdateTime = Tone.now();
 		} else if (this.dot.inFloatingMode) {
 			playDotSound(this.dot, glitchSynth,
 				"all", "16n", -20, "16n");
+			this.lastUpdateTime = Tone.now();
 		} else if (this.dot.hasCollided) {
 			// Collision
 			playDotSound(this.dot, "piano", currentScale, "8n", 0, "8n");
+			this.lastUpdateTime = Tone.now();
 		}
 	}
 }
@@ -129,10 +144,10 @@ function drawCursor(ctx, x, y, colour = "black") {
 }
 
 function scrollCanvas(ctx, scrollLength, periodic = false) {
+	scrollLength = Math.round(scrollLength);
 	if (Math.abs(scrollLength) < 1) {
 		return;
 	}
-	scrollLength = Math.round(scrollLength);
 
 	if (scrollLength > 0) {
 		// Scroll left
@@ -205,6 +220,7 @@ export async function setupScene(scene, bpm = 120) {
 			return;
 		}
 		playDotSound(null, "piano", "C7", "4n", -10, "8n");
+		scene.lastUpdateTime = Tone.now();
 	});
 
 	// Scene & audio
@@ -228,7 +244,8 @@ export async function setupScene(scene, bpm = 120) {
 	// Metronome
 	Tone.start();
 	Tone.Transport.scheduleRepeat((time) => {
-		metroSynth.triggerAttackRelease("G2", "8n", time);
+		metroSynth.triggerAttackRelease(
+			"G2", "8n", time);
 	}, "4n");
 	Tone.Transport.scheduleRepeat(() => {
 		const pos = Tone.Transport.position.split('.')[0];
@@ -240,13 +257,14 @@ export async function setupScene(scene, bpm = 120) {
 	}, "8n");
 
 	await loadScales("assets/scales.json");
-	Tone.Transport.scheduleRepeat(() => {
-		const scaleName = pickRandomScale();
-		const scaleContainer = document.getElementById("scale-container");
-		if (scaleContainer) {
-			scaleContainer.innerText = `Scale: ${scaleName}`;
-		}
-	}, "2m");
+	// currentScale = scales["C Major"];
+	// Tone.Transport.scheduleRepeat(() => {
+	// 	const scaleName = pickRandomScale();
+	// 	const scaleContainer = document.getElementById("scale-container");
+	// 	if (scaleContainer) {
+	// 		scaleContainer.innerText = `Scale: ${scaleName}`;
+	// 	}
+	// }, "2m");
 
 	// Words
 	await loadFontStyles("assets/word-styles.json");
@@ -258,11 +276,15 @@ export async function setupScene(scene, bpm = 120) {
 	scene.wordBuffer = "";
 	scene.wordNeedsUpdate = false;
 	scene.clearSentenceBuffer = false;
-	// show on screen
-	// document.getElementById("canvas-container").appendChild(this.wordsCanvas);
+	scene.updateScene = false;
+	scene.hasPrintedSentence = false;
 
-	// Periodic boundary
-	scene.periodic = false;
+	scene.lastQuickAudioTime = 0;
+	scene.lastUpdateTime = 0;
+	scene.justStarted = true;
+	scene.questionHistory = [];
+	// show on screen
+	// document.getElementById("canvas-container").appendChild(scene.nounBBCanvas);
 
 	// Dot
 	scene.dot.width = scene.simWidth;
@@ -273,8 +295,30 @@ export async function setupScene(scene, bpm = 120) {
 	scene.dot.ry = scene.dot.r / scene.dot.yScale; // radius in simulation units
 	const h = (scene.dot.g * 60 ** 2 / (8 * scene.bpm ** 2));
 	scene.dot.y = scene.dot.height - h - scene.dot.r / scene.dot.yScale;
-	scene.dot.maxSpeed =
-		Math.sqrt(2 * Math.abs(scene.dot.g) * (scene.dot.height - scene.dot.y - scene.dot.r / scene.dot.yScale));
+	// scene.dot.maxSpeed =
+	// 	Math.sqrt(2 * Math.abs(scene.dot.g) * (scene.dot.height - scene.dot.y - scene.dot.r / scene.dot.yScale));
+	calculateMaxSpeed(scene.dot, scene.bpm);
+}
+
+function getNewQuestion(scene) {
+	let questionId;
+	do {
+		questionId = Math.floor(Math.random() * customQuestions.length);
+	} while (scene.questionHistory.includes(questionId));
+
+	// Update the history buffer
+	scene.questionHistory.push(questionId);
+	if (scene.questionHistory.length > 3) {
+		scene.questionHistory.shift(); // Remove the oldest question
+	}
+
+	return questionId;
+}
+
+function calculateMaxSpeed(dot, bpm) {
+	const h = (dot.g * 60 ** 2 / (8 * bpm ** 2));
+	const y = dot.height - h - dot.r / dot.yScale;
+	dot.maxSpeed = Math.sqrt(2 * Math.abs(dot.g) * (dot.height - y - dot.r / dot.yScale));
 }
 
 async function loadScales(src = "assets/scales.json") {
