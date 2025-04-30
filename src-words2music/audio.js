@@ -1,5 +1,7 @@
 export const audioCtx = new (window.AudioContext || window.webkitAudioContext)({
-	latencyHint: "interactive", // Use "interactive" for low latency
+	latencyHint: "playback", // Use "interactive" for low latency
+	// latencyHint: "interactive", // Use "interactive" for low latency
+	sampleRate: 44100,
 }); // AudioContext for the browser
 console.log("AudioContext initialised:", audioCtx);
 
@@ -23,6 +25,7 @@ export const teleportSynth = new Tone.MonoSynth({
 
 // Load tonejs-instruments sample library
 export let instruments = {};
+export let piano = null;
 export async function loadIntsruments() {
 	instruments = await SampleLibrary.load({
 		instruments: ['piano', 'bass-electric', 'bassoon', 'cello', 'clarinet', 'contrabass', 'french-horn', 'guitar-acoustic', 'guitar-electric', 'guitar-nylon', 'harp', 'organ', 'saxophone', 'trombone', 'trumpet', 'tuba', 'violin', 'xylophone'],
@@ -30,6 +33,7 @@ export async function loadIntsruments() {
 	})
 	console.log("SampleLibrary loaded: ", Object.keys(instruments));
 	await Tone.loaded();
+	piano = instruments["piano"];
 }
 
 let lastSoundTime = 0;

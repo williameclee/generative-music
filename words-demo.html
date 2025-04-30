@@ -3,26 +3,24 @@
 	<head>
 		<meta charset="UTF-8">
 		<title>ISTA301 Demo 2</title>
-		<style>
-    body { font-family: sans-serif; text-align: center; padding: 2em; background: #f0f0f0; }
-    canvas { border: 1px solid black; background: white; margin-top: 1em; }
-    /* input { font-size: 1.2em; margin-top: 1em; width: 80%; padding: 0.5em; } */
-  </style>
+		<link rel="stylesheet" href="src-words2music/style.css" media="All">
 	</head>
-
-		<!-- <h2>✍️ Streaming Text + Outline Trace</h2> -->
+	<body>
+		<div id="canvas-container" style="text-align: left;">
+			<canvas id="canvas"></canvas>
+		<div id="loading-screen">
+			Hint: Chrome and Firefox are tested to have less audio latency compared to Safari.
+		</div>
+		</di>
 		<div class="" id="controls">
-			<input id="input" placeholder="Type...">
+			<input id="input">
 			<!-- <input type="checkbox" name="toggleSound" id="toggleSound"> -->
 			<!-- <label for="toggleSound">Play sound</label> -->
-			<input type="button" value="Play" id="startScene">
+			<button id="startScene">Play</button>
 			<!-- <input type="button" value="Proceed 1 frame" id="updateSceneFrame"> -->
 			<!-- <span id="metronome-container">Metronome: </span>
 			<span id="scale-container">Scale: </span> -->
 		</div>
-		<div id="canvas-container" style="text-align: left;">
-			<canvas id="canvas" width="800" height="600"></canvas>
-		</di>
 		<!-- <div>
 			<span id="sentence-buffer-container">
 				Sentence: 

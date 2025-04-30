@@ -1,7 +1,7 @@
 import { Dot } from "./dot.js"
 import { loadFontStyles, addWord2canvas, addWord2canvasWbb, loadWordBuffers, wordBuffers, loadCustomQuestions, customQuestions, printSentence2canvas } from "./words.js"
 import { playDotSound } from "./audio.js";
-import { loadIntsruments, instruments, metroSynth, glitchSynth, teleportSynth } from "./audio.js";
+import { loadIntsruments, piano, metroSynth, glitchSynth, teleportSynth } from "./audio.js";
 
 let scales = {};  // where all scales will be stored
 let currentScale = [];  // active scale during playback
@@ -9,8 +9,12 @@ let currentScale = [];  // active scale during playback
 export class ScrollingScene {
 	constructor(canvas, inputElement) {
 		this.mainCtx = canvas.getContext("2d");
-		this.width = canvas.width;
-		this.height = canvas.height;
+		this.width = window.innerWidth / 2;
+		this.height = window.innerHeight / 2;
+		canvas.width = this.width;
+		canvas.height = this.height;
+		// this.width = canvas.width;
+		// this.height = canvas.height;
 		this.simHeight = 2;
 		this.simWidth = 5;
 		this.bgCanvas = document.createElement("canvas");
@@ -112,7 +116,7 @@ export class ScrollingScene {
 		if (this.dot.hasCollidedWithGround) {
 			// Ground bounce
 			try {
-				playDotSound(this.dot, "piano",
+				playDotSound(this.dot, piano,
 					currentScale[0].replace("4", "2").replace("3", "2"),
 					"2n", -10, "4n");
 			} catch (e) {
@@ -130,7 +134,7 @@ export class ScrollingScene {
 			this.lastUpdateTime = Tone.now();
 		} else if (this.dot.hasCollided) {
 			// Collision
-			playDotSound(this.dot, "piano", currentScale, "8n", 0, "8n");
+			playDotSound(this.dot, piano, currentScale, "8n", 0, "8n");
 			this.lastUpdateTime = Tone.now();
 		}
 	}
@@ -219,7 +223,7 @@ export async function setupScene(scene, bpm = 120) {
 		if (!(e.key === "Backspace" || e.key === "Delete")) {
 			return;
 		}
-		playDotSound(null, "piano", "C7", "4n", -10, "8n");
+		playDotSound(null, piano, "C7", "4n", -10, "8n");
 		scene.lastUpdateTime = Tone.now();
 	});
 
@@ -233,15 +237,10 @@ export async function setupScene(scene, bpm = 120) {
 	Tone.Transport.timeSignature = 4;
 	Tone.Transport.loop = false;
 
-	const loaded = await SampleLibrary.load({
-		instruments: ['piano', 'bass-electric', 'bassoon', 'cello', 'clarinet', 'contrabass', 'french-horn', 'guitar-acoustic', 'guitar-electric', 'guitar-nylon', 'harp', 'organ', 'saxophone', 'trombone', 'trumpet', 'tuba', 'violin', 'xylophone'],
-		baseUrl: "src/tonejs-instruments/samples/",
-	})
-	Object.assign(instruments, loaded);
-	console.log("SampleLibrary loaded: ", Object.keys(instruments));
-	await Tone.loaded();
+	await loadIntsruments();
 
 	// Metronome
+	Tone.Transport.clear();
 	Tone.start();
 	Tone.Transport.scheduleRepeat((time) => {
 		metroSynth.triggerAttackRelease(

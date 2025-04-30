@@ -3,6 +3,7 @@ import { audioCtx } from "./audio.js"
 
 const inputBox = document.getElementById("input");
 const canvas = document.getElementById("canvas");
+const loadingScreen = document.getElementById("loading-screen");
 
 var bpm = 144;
 var scene = new ScrollingScene(canvas, inputBox);
@@ -13,10 +14,14 @@ const controlsDiv = document.getElementById("controls");
 if (controlsDiv) {
 	console.log("Hiding start button");
 	controlsDiv.style.display = "none";
+	inputBox.style.display = "none";
 }
 setupScene(scene, bpm).then(() => {
 	if (controlsDiv) {
 		controlsDiv.style.display = "block";
+		if (loadingScreen) {
+			loadingScreen.style.display = "none";
+		}
 	}
 });
 
@@ -68,10 +73,13 @@ if (startScene) {
 		await audioCtx.resume();
 		scene.updateScene = !scene.updateScene;
 		if (scene.updateScene) {
-			startScene.value = "Pause";
+			// startScene.value = "Pause";
+			startScene.style.display = "none";
+			inputBox.style.display = "inline-block";
+			inputBox.focus();
 			requestAnimationFrame(update);
 		} else {
-			startScene.value = "Resume";
+			// startScene.value = "Resume";
 		}
 	});
 }

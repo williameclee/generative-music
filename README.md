@@ -2,7 +2,7 @@
 
 This repository contains code for out final project for the course *ISTA301: Computing and the Arts* at the University of Arizona.
 
-The demo is found [here](https://williameclee.github.io/generative-music/demo.html).
+The demo is found [here](https://williameclee.github.io/generative-music/words-demo.html).
 
 ## Contribution
 
@@ -17,6 +17,7 @@ The group members are:
 ## Attribution
 The code is based on the following resources:
 
+- [Compromise](https://compromise.cool)
 - [espeakng.js-cdn](https://github.com/pettarin/espeakng.js-cdn.git)
 - [MIDI.js](https://github.com/mudcube/midi.js/)
 - [pitchy](https://www.npmjs.com/package/pitchy)
