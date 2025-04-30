@@ -1,16 +1,23 @@
 {
   "nounCtx": {
-	"canvas": "nounCanvas",
+    "canvas": "nounCanvas",
     "order": 1,
-	"scrollSpeed": 1,
+    "scrollSpeed": 1,
     "cursor": ["cursorX", "cursorY"],
-	"cursorOffset": [0, -20]
+    "cursorOffset": [0, -20]
   },
   "adjCtx": {
-	"canvas": "adjCanvas",
+    "canvas": "adjCanvas",
     "order": 0,
-	"scrollSpeed": 0.8,
+    "scrollSpeed": 0.8,
     "cursor": ["adjCursorX", "adjCursorY"],
-	"cursorOffset": [0, 0]
+    "cursorOffset": [0, 0]
+  },
+  "questionCtx": {
+    "canvas": "questionCanvas",
+    "order": 2,
+    "scrollSpeed": 0.2,
+    "cursor": ["cursorX", "cursorY"],
+    "cursorOffset": [0, 0]
   }
 }

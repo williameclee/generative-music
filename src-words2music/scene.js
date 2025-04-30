@@ -1,7 +1,7 @@
 import { Dot } from "./dot.js"
-import { loadFontStyles, addWordToCanvas, loadWordBuffers, wordBuffers } from "./words.js"
+import { loadFontStyles, addWord2canvas, loadWordBuffers, wordBuffers, loadCustomQuestions, customQuestions, printSentence2canvas } from "./words.js"
 import { playDotSound } from "./audio.js";
-import { loadIntsruments, instruments, metroSynth } from "./audio.js";
+import { loadIntsruments, instruments, metroSynth, glitchSynth, teleportSynth } from "./audio.js";
 
 let scales = {};  // where all scales will be stored
 let currentScale = [];  // active scale during playback
@@ -28,13 +28,19 @@ export class ScrollingScene {
 		this.dotXTarget = this.dot.x; // where the dot should be
 		this.clearSentenceBuffer = false;
 		this.updateScene = false;
+		this.hasPrintedSentence = false;
+		this.lastQuickAudioTime = 0;
 	}
 
 	simulate(deltaTime) {
 		if (this.wordNeedsUpdate) {
-			addWordToCanvas(this);
+			addWord2canvas(this);
 			this.wordBuffer = "";
 			this.wordNeedsUpdate = false;
+		}
+		if (!this.hasPrintedSentence) {
+			printSentence2canvas(customQuestions[0], this)
+			this.hasPrintedSentence = true;
 		}
 		this.wordsCtx.clearRect(0, 0,
 			this.wordsCtx.canvas.width, this.wordsCtx.canvas.height);
@@ -101,12 +107,12 @@ export class ScrollingScene {
 				console.warning("Error playing sound:", e);
 			}
 		} else if (this.dot.inSlowMo) {
-			// Slow falling mode
-			playDotSound(this.dot, new Tone.MembraneSynth().toDestination(),
-				currentScale, "4n", -20, "8n");
+			// playDotSound(this.dot, "harp",
+			// 	currentScale, "4n", -20, "8n");
+			playDotSound(this.dot, teleportSynth,
+				currentScale, "4n", -10, "8n");
 		} else if (this.dot.inFloatingMode) {
-			// Floating mode
-			playDotSound(this.dot, new Tone.MembraneSynth().toDestination(),
+			playDotSound(this.dot, glitchSynth,
 				"all", "16n", -20, "16n");
 		} else if (this.dot.hasCollided) {
 			// Collision
@@ -212,7 +218,7 @@ export async function setupScene(scene, bpm = 120) {
 	Tone.Transport.loop = false;
 
 	const loaded = await SampleLibrary.load({
-		instruments: ['piano', 'bass-electric', 'bassoon', 'cello', 'clarinet', 'contrabass', 'french-horn', 'guitar-acoustic', 'guitar-electric', 'guitar-nylon', 'harp', 'organ', 'saxophone', 'trombone', 'trumpet', 'tuba', 'violin'],
+		instruments: ['piano', 'bass-electric', 'bassoon', 'cello', 'clarinet', 'contrabass', 'french-horn', 'guitar-acoustic', 'guitar-electric', 'guitar-nylon', 'harp', 'organ', 'saxophone', 'trombone', 'trumpet', 'tuba', 'violin', 'xylophone'],
 		baseUrl: "src/tonejs-instruments/samples/",
 	})
 	Object.assign(instruments, loaded);
@@ -226,21 +232,28 @@ export async function setupScene(scene, bpm = 120) {
 	}, "4n");
 	Tone.Transport.scheduleRepeat(() => {
 		const pos = Tone.Transport.position.split('.')[0];
-		document.getElementById("metronome-container").textContent = `Metronome: ${pos}`;
+		// show on screen
+		const metronomeContainer = document.getElementById("metronome-container");
+		if (metronomeContainer) {
+			metronomeContainer.innerText = `Metronome: ${pos}`;
+		}
 	}, "8n");
 
 	await loadScales("assets/scales.json");
 	Tone.Transport.scheduleRepeat(() => {
 		const scaleName = pickRandomScale();
 		const scaleContainer = document.getElementById("scale-container");
-		scaleContainer.innerText = `Scale: ${scaleName}`;
-		console.log("New scale:", currentScale);
+		if (scaleContainer) {
+			scaleContainer.innerText = `Scale: ${scaleName}`;
+		}
 	}, "2m");
 
 	// Words
 	await loadFontStyles("assets/word-styles.json");
 	await loadWordBuffers("assets/word-buffers.json", scene);
 	scene.wordBufferNames = Object.keys(wordBuffers).sort((a, b) => wordBuffers[a].order - wordBuffers[b].order);
+	await loadCustomQuestions("assets/custom-questions.json");
+	console.log("Custom questions loaded:", customQuestions);
 	scene.sentenceBuffer = "";
 	scene.wordBuffer = "";
 	scene.wordNeedsUpdate = false;

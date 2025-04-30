@@ -58,5 +58,10 @@
     "buffer": "nounCtx",
     "style": ["", "", [50, 250], "Times New Roman", "", "black", "alphabetic"],
     "offsetRatio": [1.0, 0.0]
+  },
+  "custom-sentence": {
+    "buffer": "questionCtx",
+    "style": ["", "", [40, 40], "monospace", "", "black", "alphabetic"],
+    "offsetRatio": [1.0, 0.0]
   }
 }

@@ -1,11 +1,31 @@
+export const audioCtx = new (window.AudioContext || window.webkitAudioContext)({
+	latencyHint: "interactive", // Use "interactive" for low latency
+}); // AudioContext for the browser
+console.log("AudioContext initialised:", audioCtx);
+
 // Some simple synthetic instruments
 export const metroSynth = new Tone.MembraneSynth().toDestination();
+export const glitchSynth = new Tone.MembraneSynth().toDestination();
+export const teleportSynth = new Tone.MonoSynth({
+	oscillator: { type: "sine" },
+	envelope: {
+		attack: 0.5,
+		decay: 0.2,
+		sustain: 0.1,
+		release: 2
+	},
+	filter: {
+		Q: 3,
+		type: "lowpass",
+		rolloff: -12
+	}
+})
 
 // Load tonejs-instruments sample library
 export let instruments = {};
 export async function loadIntsruments() {
 	instruments = await SampleLibrary.load({
-		instruments: ['piano', 'bass-electric', 'bassoon', 'cello', 'clarinet', 'contrabass', 'french-horn', 'guitar-acoustic', 'guitar-electric', 'guitar-nylon', 'harp', 'organ', 'saxophone', 'trombone', 'trumpet', 'tuba', 'violin'],
+		instruments: ['piano', 'bass-electric', 'bassoon', 'cello', 'clarinet', 'contrabass', 'french-horn', 'guitar-acoustic', 'guitar-electric', 'guitar-nylon', 'harp', 'organ', 'saxophone', 'trombone', 'trumpet', 'tuba', 'violin', 'xylophone'],
 		baseUrl: "src/tonejs-instruments/samples/",
 	})
 	console.log("SampleLibrary loaded: ", Object.keys(instruments));
@@ -15,11 +35,7 @@ export async function loadIntsruments() {
 let lastSoundTime = 0;
 
 export async function playDotSound(y, instrument, scale = null, length = "8n", volume = 0, snapTime = null) {
-	if (Tone.now() - lastSoundTime < 0.02) {
-		console.log("Too soon to play sound");
-		return;
-	}
-	lastSoundTime = Tone.now();
+	await audioCtx.resume();
 
 	// Handle frequency
 	var frequency;
@@ -68,6 +84,15 @@ export async function playDotSound(y, instrument, scale = null, length = "8n", v
 		return;
 	}
 	const time = snap2subdivision(snapTime);
+	try {
+		const lastTime = y.lastQuickAudioTime;
+		if (Math.abs(time - lastTime) < 0.01) {
+			console.log("Skipping sound: too close to last sound");
+			return;
+		}
+		y.lastQuickAudioTime = time;
+	} catch (e) {
+	}
 	instrument.triggerAttackRelease(frequency, length, time);
 }
 

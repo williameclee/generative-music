@@ -1,4 +1,5 @@
 import { ScrollingScene, setupScene } from "./scene.js"
+import { audioCtx } from "./audio.js"
 
 const inputBox = document.getElementById("input");
 const canvas = document.getElementById("canvas");
@@ -29,7 +30,6 @@ function update(timestamp) {
 		lastTimestamp = timestamp;
 	}
 	if (scene.dot.hasCollidedWithGround && !scene.metronomeStarted) {
-		Tone.start();
 		Tone.Transport.start();
 		scene.metronomeStarted = true;
 	}
@@ -62,9 +62,10 @@ function update(timestamp) {
 // Starting and stopping everything 
 const startScene = document.getElementById("startScene");
 if (startScene) {
-	startScene.addEventListener("click", () => {
+	startScene.addEventListener("click", async () => {
 		console.log("Starting scene");
-		Tone.start();
+		await Tone.start();
+		await audioCtx.resume();
 		scene.updateScene = !scene.updateScene;
 		if (scene.updateScene) {
 			startScene.value = "Pause";

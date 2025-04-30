@@ -40,7 +40,13 @@ export async function loadWordBuffers(src = "assets/word-buffers.json", scene) {
 
 }
 
-export function addWordToCanvas(scene, randomiseFontSize = true) {
+export let customQuestions = [];
+export async function loadCustomQuestions(src = "assets/cusotm-questions.json") {
+	const response = await fetch(src);
+	customQuestions = await response.json();
+}
+
+export function addWord2canvas(scene, randomiseFontSize = true) {
 	if (scene.wordBuffer.trim() === "") return;
 
 	const wordType = getWordType(scene.wordBuffer, scene.sentenceBuffer);
@@ -95,6 +101,49 @@ export function addWordToCanvas(scene, randomiseFontSize = true) {
 	const wordTypeContainer = document.getElementById("word-type-container");
 	if (wordTypeContainer) {
 		wordTypeContainer.innerText = wordType;
+	}
+}
+
+export function printSentence2canvas(sentence, scene, wordType = "custom-sentence") {
+	const fontInfo = fontStyles[wordType];
+	const fontStyle = fontInfo["style"] || fontStyles["default"]["style"];
+	console.log("Font info:", fontInfo, fontStyle);
+	if (fontStyle[4] === "uppercase") {
+		scene.wordBuffer = scene.wordBuffer.toUpperCase();
+	} else if (fontStyle[4] === "lowercase") {
+		scene.wordBuffer = scene.wordBuffer.toLowerCase();
+	}
+
+	const fontSize = fontStyle[2][0];
+
+	const ctx = scene[fontInfo["buffer"]] || scene.wordsCtx;
+	console.log(`${fontStyle[0]} ${fontStyle[1]} ${fontSize}px ${fontStyle[3]}`)
+	ctx.font = `${fontStyle[0]} ${fontStyle[1]} ${fontSize}px ${fontStyle[3]}`;
+	ctx.fillStyle = fontStyle[5] || "black";
+	ctx.textBaseline = fontStyle[6] || "alphebatic";
+
+	// const wordWidth = ctx.measureText(scene.wordBuffer).width;
+
+	const metrics = ctx.measureText(sentence[0]);
+	const lineHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+
+	console.log("lineHeight:", lineHeight);
+
+	var cursorY = scene.height * 0.3;
+	var maxWidth = 0;
+	for (let i = 0; i < sentence.length; i++) {
+		const phrase = sentence[i];
+		const phraseWidth = ctx.measureText(phrase).width;
+		if (phraseWidth > maxWidth) {
+			maxWidth = phraseWidth;
+		}
+	}
+	const cursorX = Math.round((scene.width - maxWidth) / 2);
+	
+	for (let i = 0; i < sentence.length; i++) {
+		const phrase = sentence[i];
+		ctx.fillText(phrase, cursorX, cursorY);
+		cursorY -= lineHeight;
 	}
 }
 

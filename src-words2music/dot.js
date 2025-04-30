@@ -2,11 +2,13 @@ export class Dot {
 	constructor(x, radius) {
 		this.x = x;
 		this.y = 0;
-		this.u = 0.3;
+		this.u = 1;
+		this.u0 = 1;
 		this.v = 0;
 		this.r = radius;
 		this.g = 12;
-		this.viscosity = 4;
+		this.vViscosity = 4;
+		this.hViscosity = 2;
 		this.xPrev = this.x;
 		this.yPrev = this.y;
 		this.uPrev = this.u;
@@ -32,11 +34,17 @@ export class Dot {
 		}
 
 		// x-motion
+		if (this.inSlowMo) {
+			this.u -= this.hViscosity * this.u * deltaTime;
+			this.u = Math.max(this.u, this.u0 * 0.5);
+		} else {
+			this.u += this.hViscosity * (this.u0 - this.u) * deltaTime;
+		}
 		this.xTarget = this.x + this.u * deltaTime;
 
 		// y-motion
 		if (this.inSlowMo) {
-			this.v -= this.viscosity * this.v * deltaTime;
+			this.v -= this.vViscosity * this.v * deltaTime;
 			this.v += (0.2 * this.g) * deltaTime;
 		} else if (this.inFloatingMode) {
 			this.v += (-0.5 * this.g) * deltaTime;
@@ -78,6 +86,13 @@ export class Dot {
 		if (this.inFloatingMode || this.inSlowMo) {
 			this.x = this.xTarget;
 			this.y = this.yTarget;
+			if (collisionResult.hasCollided == 1) {
+				this.inFloatingMode = true;
+				this.inSlowMo = false;
+			} else if (collisionResult.hasCollided == 2) {
+				this.inFloatingMode = false;
+				this.inSlowMo = true;
+			}
 			return;
 		}
 
@@ -117,6 +132,8 @@ export class Dot {
 		const randomFactor = Math.random();
 		if (randomFactor < 0.7) {
 			this.v *= 1 / 2;
+		} else if (randomFactor < 0.8) {
+			this.v *= 2;
 		}
 		// console.log(`Collision detected at: x = ${this.x.toFixed(2)}, y = ${this.y.toFixed(2)}, u = ${this.u.toFixed(2)}, v = ${this.v.toFixed(2)}`);
 	}
