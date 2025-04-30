@@ -36,8 +36,6 @@ export async function loadIntsruments() {
 	piano = instruments["piano"];
 }
 
-let lastSoundTime = 0;
-
 export async function playDotSound(y, instrument, scale = null, length = "8n", volume = 0, snapTime = null) {
 	await audioCtx.resume();
 
@@ -87,7 +85,7 @@ export async function playDotSound(y, instrument, scale = null, length = "8n", v
 		instrument.triggerAttackRelease(frequency, "8n");
 		return;
 	}
-	const time = snap2subdivision(snapTime);
+	const time = snap2subdivision(Tone.now(), snapTime);
 	try {
 		const lastTime = y.lastQuickAudioTime;
 		if (Math.abs(time - lastTime) < 0.02) {
@@ -100,8 +98,7 @@ export async function playDotSound(y, instrument, scale = null, length = "8n", v
 	instrument.triggerAttackRelease(frequency, length, time);
 }
 
-function snap2subdivision(subdivision = "8n", tol = 0.03) {
-	const now = Tone.now();
+function snap2subdivision(now = Tone.now(), subdivision = "8n", tol = 0.03) {
 	const nextTime = Tone.Transport.nextSubdivision(subdivision);
 
 	// Check current time is not close to the subdivision
@@ -190,4 +187,25 @@ function snapPos2scale(y, currentScale = ["C4", "D4", "E4", "F4", "G4", "A4", "B
 		}
 	}
 	return closest;
+}
+
+export async function playChord(chordNotes, time, instrument = piano, volume = -12) {
+	// Get the instrument from the loaded instruments
+	try {
+		if (typeof instrument === "string") {
+			instrument = instruments[instrument].toDestination();
+		}
+	} catch (e) {
+		instrument = instruments["piano"].toDestination();
+		console.warn("Instrument not found, using default piano");
+	}
+
+	// Set the volume
+	if (volume !== null) {
+		instrument.volume.value = volume;
+	}
+
+	time = snap2subdivision(time);
+
+	instrument.triggerAttackRelease(chordNotes, "1m", time);
 }

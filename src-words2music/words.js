@@ -8,18 +8,12 @@ export async function loadFontStyles(src = "assets/word-styles.json") {
 }
 
 export let wordBuffers = [];
-// export let cursors = [];
 
 export async function loadWordBuffers(src = "assets/word-buffers.json", scene) {
 	const response = await fetch(src);
 	wordBuffers = await response.json();
 
 	const bufferNames = Object.keys(wordBuffers).sort((a, b) => wordBuffers[a].order - wordBuffers[b].order);
-
-	// for (let i = 0; i < bufferNames.length; i++) {
-	// 	const cursorName = wordBuffers[bufferNames[i]]["cursor"];
-	// 	cursors.push(...cursorName);
-	// }
 
 	if (!scene) {
 		return;
@@ -36,14 +30,10 @@ export async function loadWordBuffers(src = "assets/word-buffers.json", scene) {
 		// bounding box buffer
 		const bbName = wordBuffers[bufferName]["boundingBox"];
 		scene[bbName + "Canvas"] = document.createElement("canvas");
-		console.log("Creating canvas:", bbName + "Canvas");
+		// console.log("Creating canvas:", bbName + "Canvas");
 		scene[bbName + "Canvas"].width = scene[canvasName].width;
 		scene[bbName + "Canvas"].height = scene[canvasName].height;
 		scene[bbName + "Ctx"] = scene[bbName + "Canvas"].getContext("2d", { willReadFrequently: true });
-
-		// const cursorNames = wordBuffers[bufferName]["cursor"];
-		// scene[cursorNames[0]] = scene.width + wordBuffers[bufferName]["cursorOffset"][0];
-		// scene[cursorNames[1]] = scene.height + wordBuffers[bufferName]["cursorOffset"][1];
 	}
 
 }
@@ -302,7 +292,6 @@ export function printSentence2canvas(sentence, scene, wordType = "custom-sentenc
 	const fontSize = fontStyle[2][0] * scene.width;
 
 	const ctx = scene[fontInfo["buffer"]] || scene.wordsCtx;
-	console.log(`${fontStyle[0]} ${fontStyle[1]} ${fontSize}px ${fontStyle[3]}`)
 	ctx.font = `${fontStyle[0]} ${fontStyle[1]} ${fontSize}px ${fontStyle[3]}`;
 	ctx.fillStyle = fontStyle[5] || "black";
 	ctx.textBaseline = fontStyle[6] || "alphebatic";

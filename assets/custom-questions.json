@@ -1,47 +1,137 @@
 [
   {
-    "scale": "D_minor",
-    "bpm": "120",
+    "root": "D",
+    "scale": "minor",
+    "style": "Mozart",
+    "bpm": 120,
+    "time signature": 3,
+    "instrument": "guitar-electric",
     "content": ["I don't know you.", "What's your name?"]
   },
   {
-    "scale": "B_minor",
-    "bpm": "110",
+    "root": "B",
+    "scale": "minor",
+    "style": "Bach",
+    "bpm": 110,
+    "time signature": 4,
+    "instrument": "cello",
     "content": ["What's the biggest regret", "in your life", "?"]
   },
   {
-    "scale": "F#_minor",
-    "bpm": "150",
+    "root": "F#",
+    "scale": "minor",
+    "style": "Mozart",
+    "bpm": 150,
+    "time signature": 5,
+    "instrument": "piano",
     "content": ["When did you stopped", "responding to your", "parent's messages?"]
   },
   {
-    "scale": "E_minor",
-    "bpm": "160",
+    "root": "E",
+    "scale": "minor",
+    "style": "Bach",
+    "bpm": 160,
+    "time signature": 7,
+    "instrument": "guitar-electric",
     "content": ["Do you fear the", "advancements of", "technology?"]
   },
   {
-    "scale": "G_major",
-    "bpm": "144",
+    "root": "G",
+    "scale": "major",
+    "style": "Bach",
+    "bpm": 144,
+    "time signature": 6,
+    "instrument": "piano",
     "content": ["Are you close", "with your family?", "Do you", "want to be?"]
   },
   {
-    "scale": "C_minor",
-    "bpm": "130",
+    "root": "C",
+    "scale": "minor",
+    "style": "Mozart",
+    "bpm": 130,
+    "time signature": 3,
+    "instrument": "cello",
     "content": ["What makes you think", "you", "deserve the life", "you were given?"]
   },
   {
-    "scale": "A_minor",
-    "bpm": "90",
-    "content": ["How do you know ", "you don't love someone?"]
+    "root": "A",
+    "scale": "minor",
+    "style": "Mozart",
+    "bpm": 90,
+    "time signature": 6,
+    "instrument": "guitar-acoustic",
+    "content": ["How do you know ", "you love someone?"]
   },
   {
-    "scale": "A_major",
-    "bpm": "150",
+    "root": "A",
+    "scale": "major",
+    "style": "Bach",
+    "bpm": 150,
+    "time signature": 4,
+    "instrument": "piano",
     "content": ["Who is", "the most important", "person in your life?"]
   },
   {
-    "scale": "F_minor",
-    "bpm": "160",
+    "root": "D",
+    "scale": "major",
+    "style": "Mozart",
+    "bpm": 160,
+    "time signature": 3,
+    "instrument": "bass-electric",
+    "content": ["On what date", "did you life", "changes forever?"]
+  },
+  {
+    "root": "F",
+    "scale": "minor",
+    "style": "Bach",
+    "bpm": 160,
+    "time signature": 5,
+    "instrument": "cello",
     "content": ["What's the biggest", "test", "life has ever", "thrown your way?"]
+  },
+  {
+    "root": "F",
+    "scale": "major",
+    "style": "Mozart",
+    "bpm": 144,
+    "time signature": 7,
+    "instrument": "bass-electric",
+    "content": ["What's one thing", "you would change", "about your life?"]
+  },
+  {
+    "root": "G",
+    "scale": "minor",
+    "style": "Bach",
+    "bpm": 120,
+    "time signature": 2,
+    "instrument": "piano",
+    "content": ["What do you", "fear most about", "being truly known by", "someone?"]
+  },
+  {
+    "root": "G",
+    "scale": "major",
+    "style": "Mozart",
+    "bpm": 144,
+    "time signature": 5,
+    "instrument": "guitar-acoustic",
+    "content": ["Are you", "enjoying the music?"]
+  },
+  {
+    "root": "D#",
+    "scale": "minor",
+    "style": "Bach",
+    "bpm": 130,
+    "time signature": 4,
+    "instrument": "piano",
+    "content": ["Are you", "enjoying your life?"]
+  },
+  {
+    "root": "C",
+    "scale": "minor",
+    "style": "Mozart",
+    "bpm": 180,
+    "time signature": 3,
+    "instrument": "piano",
+    "content": ["Don't stop."]
   }
 ]

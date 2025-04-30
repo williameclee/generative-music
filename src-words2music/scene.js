@@ -1,10 +1,13 @@
 import { Dot } from "./dot.js"
 import { loadFontStyles, addWord2canvas, addWord2canvasWbb, loadWordBuffers, wordBuffers, loadCustomQuestions, customQuestions, printSentence2canvas } from "./words.js"
-import { playDotSound } from "./audio.js";
+import { playDotSound, playChord } from "./audio.js";
 import { loadIntsruments, piano, metroSynth, glitchSynth, teleportSynth } from "./audio.js";
+import { loadScales, loadScaleNotes, loadTransitionMatrices, loadChordNotes, getNextChord, getChordNotes } from "./markov-chain.js";
 
-let scales = {};  // where all scales will be stored
-let currentScale = [];  // active scale during playback
+let currentScaleNotes = [];
+let currentChordNotes = [];
+let chordTransId = null;
+let chordLoopId = null;
 
 export class ScrollingScene {
 	constructor(canvas, inputElement) {
@@ -13,8 +16,6 @@ export class ScrollingScene {
 		this.height = window.innerHeight / 2;
 		canvas.width = this.width;
 		canvas.height = this.height;
-		// this.width = canvas.width;
-		// this.height = canvas.height;
 		this.simHeight = 2;
 		this.simWidth = 5;
 		this.bgCanvas = document.createElement("canvas");
@@ -44,19 +45,7 @@ export class ScrollingScene {
 
 		const idleTime = Tone.now() - this.lastUpdateTime;
 		if ((idleTime > 7 || this.justStarted) && this.dot.u < 0.1 && !this.hasPrintedSentence) {
-			const questionId = getNewQuestion(this);
-			printSentence2canvas(customQuestions[questionId]["content"], this);
-			currentScale = scales[customQuestions[questionId]["scale"]];
-			console.log("New scale:", currentScale);
-			this.hasPrintedSentence = true;
-			this.justStarted = false;
-			const bpm = customQuestions[questionId]["bpm"];
-			if (bpm) {
-				Tone.Transport.bpm.value = bpm;
-				this.bpm = bpm;
-				calculateMaxSpeed(this.dot, this.bpm);
-				console.log("max speed: ", this.bpm, this.dot.maxSpeed);
-			}
+			switchQuestion(this);
 		}
 		this.wordsCtx.clearRect(0, 0,
 			this.wordsCtx.canvas.width, this.wordsCtx.canvas.height);
@@ -97,10 +86,10 @@ export class ScrollingScene {
 			this.dot.colour = "red";
 		} else if (this.dot.inSlowMo) {
 			// Floating mode
-			this.dot.colour = "orange";
+			this.dot.colour = "pink";
 		} else if (this.dot.inFloatingMode) {
 			// Floating mode
-			this.dot.colour = "orange";
+			this.dot.colour = "pink";
 		} else if (this.dot.hasCollided) {
 			// Collision
 			this.dot.colour = "red";
@@ -116,17 +105,15 @@ export class ScrollingScene {
 		if (this.dot.hasCollidedWithGround) {
 			// Ground bounce
 			try {
-				playDotSound(this.dot, piano,
-					currentScale[0].replace("4", "2").replace("3", "2"),
+				playDotSound(this.dot, "piano",
+					currentChordNotes[0].replace("4", "2").replace("3", "2"),
 					"2n", -10, "4n");
 			} catch (e) {
 				console.warning("Error playing sound:", e);
 			}
 		} else if (this.dot.inSlowMo) {
-			// playDotSound(this.dot, "harp",
-			// 	currentScale, "4n", -20, "8n");
 			playDotSound(this.dot, teleportSynth,
-				currentScale, "2n", -10, "8n");
+				currentScaleNotes, "2n", -10, "8n");
 			this.lastUpdateTime = Tone.now();
 		} else if (this.dot.inFloatingMode) {
 			playDotSound(this.dot, glitchSynth,
@@ -134,7 +121,7 @@ export class ScrollingScene {
 			this.lastUpdateTime = Tone.now();
 		} else if (this.dot.hasCollided) {
 			// Collision
-			playDotSound(this.dot, piano, currentScale, "8n", 0, "8n");
+			playDotSound(this.dot, "piano", currentChordNotes, "8n", 0, "8n");
 			this.lastUpdateTime = Tone.now();
 		}
 	}
@@ -223,7 +210,7 @@ export async function setupScene(scene, bpm = 120) {
 		if (!(e.key === "Backspace" || e.key === "Delete")) {
 			return;
 		}
-		playDotSound(null, piano, "C7", "4n", -10, "8n");
+		playDotSound(null, "piano", "C7", "4n", -10, "8n");
 		scene.lastUpdateTime = Tone.now();
 	});
 
@@ -243,6 +230,7 @@ export async function setupScene(scene, bpm = 120) {
 	Tone.Transport.clear();
 	Tone.start();
 	Tone.Transport.scheduleRepeat((time) => {
+		metroSynth.volume.value = -10;
 		metroSynth.triggerAttackRelease(
 			"G2", "8n", time);
 	}, "4n");
@@ -256,14 +244,16 @@ export async function setupScene(scene, bpm = 120) {
 	}, "8n");
 
 	await loadScales("assets/scales.json");
-	// currentScale = scales["C Major"];
-	// Tone.Transport.scheduleRepeat(() => {
-	// 	const scaleName = pickRandomScale();
-	// 	const scaleContainer = document.getElementById("scale-container");
-	// 	if (scaleContainer) {
-	// 		scaleContainer.innerText = `Scale: ${scaleName}`;
-	// 	}
-	// }, "2m");
+	await loadTransitionMatrices("assets/chord-transitions.json");
+	await loadChordNotes("assets/chord-notes.json");
+	scene.scale = {};
+	scene.scale.currentScale = "C major";
+	scene.scale.currentChord = "I";
+	scene.scale.root = "C";
+	scene.scale.scaleType = "major";
+	scene.scale.refStyle = "Bach";
+	currentScaleNotes = loadScaleNotes(scene.currentScale);
+	// scheduleChordProgression(scene);
 
 	// Words
 	await loadFontStyles("assets/word-styles.json");
@@ -294,9 +284,23 @@ export async function setupScene(scene, bpm = 120) {
 	scene.dot.ry = scene.dot.r / scene.dot.yScale; // radius in simulation units
 	const h = (scene.dot.g * 60 ** 2 / (8 * scene.bpm ** 2));
 	scene.dot.y = scene.dot.height - h - scene.dot.r / scene.dot.yScale;
-	// scene.dot.maxSpeed =
-	// 	Math.sqrt(2 * Math.abs(scene.dot.g) * (scene.dot.height - scene.dot.y - scene.dot.r / scene.dot.yScale));
 	calculateMaxSpeed(scene.dot, scene.bpm);
+}
+
+function scheduleChordProgression(scene) {
+	if (chordTransId !== null) {
+		Tone.Transport.clear(chordTransId);
+	}
+	chordTransId = Tone.Transport.scheduleRepeat(() => {
+		// Markov chain chord progression
+		scene.scale.currentChord = getNextChord(scene.scale.currentChord, scene.scale.scaleType, scene.scale.refStyle);
+		currentChordNotes = getChordNotes(scene.scale.currentChord, scene.scale.scaleType, `${scene.scale.root}4`, true);
+		console.log(`New chord: ${scene.scale.currentChord} (${currentChordNotes.join(", ")})`);
+		// const scaleContainer = document.getElementById("scale-container");
+		// if (scaleContainer) {
+		// 	scaleContainer.innerText = `Scale: ${scaleName}`;
+		// }
+	}, "2m");
 }
 
 function getNewQuestion(scene) {
@@ -314,22 +318,52 @@ function getNewQuestion(scene) {
 	return questionId;
 }
 
+function switchQuestion(scene) {
+	const questionId = getNewQuestion(scene);
+	printSentence2canvas(customQuestions[questionId]["content"], scene);
+	scene.scale.root = customQuestions[questionId]["root"];
+	scene.scale.scaleType = customQuestions[questionId]["scale"];
+	scene.scale.refStyle = customQuestions[questionId]["style"];
+	scene.scale.currentScale = `${scene.scale.root} ${scene.scale.scaleType}`;
+	scene.scale.instrument = customQuestions[questionId]["instrument"];
+
+	currentScaleNotes = loadScaleNotes(scene.scale.currentScale);
+	currentChordNotes = getChordNotes(
+		scene.scale.currentChord, scene.scale.scaleType, `${scene.scale.root}4`, true);
+	const bpm = customQuestions[questionId]["bpm"];
+	if (bpm) {
+		Tone.Transport.bpm.value = bpm;
+		scene.bpm = bpm;
+		calculateMaxSpeed(scene.dot, scene.bpm);
+	}
+
+	Tone.Transport.clear();
+	const timeSig = customQuestions[questionId]["time signature"];
+	if (timeSig) {
+		scene.timeSig = timeSig;
+		Tone.Transport.timeSignature = timeSig;
+		scheduleChordProgression(scene);
+	}
+
+	if (chordLoopId !== null) {
+		Tone.Transport.clear(chordLoopId);
+	}
+	chordLoopId = Tone.Transport.scheduleRepeat((time) => {
+		// Update the chord using the Markov chain
+		const baseChordNotes = getChordNotes(scene.scale.currentChord, scene.scale.scaleType, `${scene.scale.root}2`, false);
+
+		// Play the chord with the selected instrument
+		playChord(baseChordNotes, time, scene.scale.instrument);
+	}, "1m"); // Trigger every measure
+
+	console.log(`New question (BPM: ${bpm}, ${timeSig}/4): scale ${scene.scale.currentScale} (${currentScaleNotes.join(", ")}), chord: ${scene.scale.currentChord} (${currentChordNotes.join(", ")})`);
+	scene.inputElement.focus();
+	scene.hasPrintedSentence = true;
+	scene.justStarted = false;
+}
+
 function calculateMaxSpeed(dot, bpm) {
 	const h = (dot.g * 60 ** 2 / (8 * bpm ** 2));
 	const y = dot.height - h - dot.r / dot.yScale;
 	dot.maxSpeed = Math.sqrt(2 * Math.abs(dot.g) * (dot.height - y - dot.r / dot.yScale));
-}
-
-async function loadScales(src = "assets/scales.json") {
-	const response = await fetch(src);
-	scales = await response.json();
-	console.log("Loaded scales:", Object.keys(scales));
-}
-
-function pickRandomScale() {
-	const scaleNames = Object.keys(scales);
-	const randomName = scaleNames[Math.floor(Math.random() * scaleNames.length)];
-	currentScale = scales[randomName];
-	return randomName;
-	console.log("New scale:", randomName, currentScale);
 }
