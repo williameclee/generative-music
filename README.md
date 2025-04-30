@@ -2,7 +2,7 @@
 
 This repository contains code for our final project for the course *ISTA301: Computing and the Arts* at the University of Arizona.
 
-The demo is found [here](https://williameclee.github.io/generative-music/words-demo.html).
+The demo is found [here](https://williameclee.github.io/generative-music/words2music.html).
 
 ## Contribution
 
