@@ -1,6 +1,6 @@
 # generative-music
 
-This repository contains code for out final project for the course *ISTA301: Computing and the Arts* at the University of Arizona.
+This repository contains code for our final project for the course *ISTA301: Computing and the Arts* at the University of Arizona.
 
 The demo is found [here](https://williameclee.github.io/generative-music/words-demo.html).
 
@@ -15,7 +15,7 @@ The group members are:
 - Parker London
 
 ## Attribution
-The code is based on the following resources:
+The code is based on the following JavaScript packages:
 
 - [Compromise](https://compromise.cool)
 - [espeakng.js-cdn](https://github.com/pettarin/espeakng.js-cdn.git)
@@ -24,3 +24,7 @@ The code is based on the following resources:
 - [SoundTouchJS](https://github.com/cutterbl/SoundTouchJS.git)
 - [tonejs-instruments](https://github.com/nbrosowsky/Tonejs-Instruments.git)
 - [Tone.js](https://tonejs.github.io/)
+
+The Markov chain chord progression is implemented with the transition matrices from the following article:
+
+- [Kiefer, P. & Riehl, M. (2016). Markov chains of chord progressions. *Ball State Undergraduate Mathematics Exchange*, *10*(1), p. 16–21.](https://digitalresearch.bsu.edu/mathexchange/)
