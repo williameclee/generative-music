@@ -15,6 +15,7 @@ The group members are:
 - Parker London
 
 ## Attribution
+
 The code is based on the following JavaScript packages:
 
 - [Compromise](https://compromise.cool)

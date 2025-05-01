@@ -28,7 +28,7 @@ export let instruments = {};
 export let piano = null;
 export async function loadIntsruments() {
 	instruments = await SampleLibrary.load({
-		instruments: ['piano', 'bass-electric', 'bassoon', 'cello', 'clarinet', 'contrabass', 'french-horn', 'guitar-acoustic', 'guitar-electric', 'guitar-nylon', 'harp', 'organ', 'saxophone', 'trombone', 'trumpet', 'tuba', 'violin', 'xylophone'],
+		instruments: ['piano', 'bass-electric', 'cello', 'guitar-acoustic', 'guitar-electric'],
 		baseUrl: "src/tonejs-instruments/samples/",
 	})
 	console.log("SampleLibrary loaded: ", Object.keys(instruments));
