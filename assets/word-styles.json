@@ -21,12 +21,12 @@
   },
   "adjective": {
     "buffer": "adjCtx",
-    "style": ["italic", "bold", [0.50, 0.75], "Times New Roman", "", "#990000", "alphabetic"],
+    "style": ["italic", "bold", [0.30, 0.75], "Times New Roman", "", "#990000", "alphabetic"],
     "priority": "right"
   },
   "adverb": {
     "buffer": "adjCtx",
-    "style": ["italic", "bold", [0.40, 0.65], "Times New Roman", "", "#990000", "alphabetic"],
+    "style": ["italic", "bold", [0.30, 0.65], "Times New Roman", "", "#990000", "alphabetic"],
     "priority": "right"
   },
   "conjunction": {
