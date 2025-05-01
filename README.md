@@ -1,8 +1,8 @@
 # generative-music
 
-This repository contains code for our final project for the course *ISTA301: Computing and the Arts* at the University of Arizona.
+This repository contains code for our final project *SurveySynth* for the course *ISTA301: Computing and the Arts* at the University of Arizona.
 
-The demo is found [here](https://williameclee.github.io/generative-music/words2music.html).
+The live version of the piece is found [here](https://williameclee.github.io/generative-music/words2music.html).
 
 ## Contribution
 
