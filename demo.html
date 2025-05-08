@@ -16,7 +16,46 @@
     <link rel="stylesheet" href="style/style.css" media="All">
   </head>
   <body>
-    <h1>ISTA301 Generative Music Demo</h1>
+    <h1>ISTA301 Generative Music Demo</<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sentiment Analyzer Demo</title>
+  <style>
+    body { font-family: sans-serif; padding: 2em; max-width: 600px; margin: auto; }
+    textarea { width: 100%; height: 100px; font-size: 1.1em; }
+    .result { margin-top: 1em; font-size: 1.2em; }
+  </style>
+</head>
+<body>
+
+  <h1>Sentiment Analyzer</h1>
+  <p>Type something and see how the system feels about it:</p>
+
+  <textarea id="input" placeholder="e.g. I'm feeling hopeful but also a bit lost..."></textarea>
+  <div class="result" id="output"></div>
+
+  <script type="module">
+    import Sentiment from 'https://esm.sh/sentiment@5.1.1';
+
+    const sentiment = new Sentiment();
+    const input = document.getElementById('input');
+    const output = document.getElementById('output');
+
+    input.addEventListener('input', () => {
+      const result = sentiment.analyze(input.value);
+
+      output.innerHTML = `
+        <strong>Score:</strong> ${result.score}<br>
+        <strong>Comparative:</strong> ${result.comparative.toFixed(3)}<br>
+        <strong>Positive words:</strong> ${result.positive.join(', ') || 'None'}<br>
+        <strong>Negative words:</strong> ${result.negative.join(', ') || 'None'}
+      `;
+    });
+  </script>
+
+</body>
+</html>h1>
 
     <div id="loadingIndicator">Loading resources, please wait...</div>
 
@@ -24,7 +63,7 @@
       placeholder="Type the lyrics" style="width: 100%;">
 
     <div class="control-panel">
-      <label for="bpmSlider">Tempo: <span id="bpmValue">100</span></label>
+      <label for="bpmSlider">Tempo: <span id="bpmValue">144</span></label>
       <input type="range" min="50" max="200" value="144" step="2" class="slider"
         id="bpmSlider">
       <label for="instrumentSelect">Accompaniment instrument: </label>
